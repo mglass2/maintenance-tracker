@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: maintenance-tracker-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - maintenance-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: maintenance-tracker-api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      API_HOST: ${API_HOST}
+      API_PORT: ${API_PORT}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./api/src:/app/src
+    networks:
+      - maintenance-network
+    restart: unless-stopped
+
+  cli:
+    build:
+      context: ./cli
+      dockerfile: Dockerfile
+    container_name: maintenance-tracker-cli
+    environment:
+      API_URL: ${API_URL}
+    stdin_open: true
+    tty: true
+    depends_on:
+      - api
+    volumes:
+      - ./cli/src:/app/src
+    networks:
+      - maintenance-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  maintenance-network:
+    driver: bridge
