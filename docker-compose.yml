@@ -52,6 +52,7 @@ services:
       - api
     volumes:
       - ./cli/src:/app/src
+      - ./cli/tests:/app/tests
     networks:
       - maintenance-network
     restart: unless-stopped
