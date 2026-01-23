@@ -6,6 +6,7 @@ from typing import Optional
 import requests
 
 from .config import APIConfig
+from src import session
 from .exceptions import (
     APIClientError4xx,
     APIConnectionError,
@@ -86,12 +87,19 @@ class APIClient:
         """
         url = build_url(self.config.base_url, endpoint)
 
+        # Inject user ID header if user is authenticated
+        headers = {}
+        user_id = session.get_active_user_id()
+        if user_id:
+            headers['X-User-ID'] = str(user_id)
+
         try:
             response = self._session.request(
                 method=method,
                 url=url,
                 json=data,
                 timeout=self.config.timeout,
+                headers=headers,
             )
         except requests.Timeout as e:
             raise APITimeoutError(

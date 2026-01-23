@@ -23,7 +23,10 @@ def test_help_command_shows_available_commands():
 
 def test_interactive_mode_help_command(capsys):
     """Test that typing 'help' in interactive mode shows general help."""
-    with patch("click.prompt", side_effect=["help", "exit"]):
+    # Mock session to skip user selection
+    with patch("src.main.session.is_authenticated", return_value=True), \
+         patch("src.main.session.get_active_user_data", return_value={"name": "Test User"}), \
+         patch("click.prompt", side_effect=["help", "exit"]):
         interactive_mode()
 
     # Capture stdout
@@ -37,7 +40,10 @@ def test_interactive_mode_help_command(capsys):
 
 def test_interactive_mode_help_case_insensitive(capsys):
     """Test that 'help' is case insensitive in interactive mode."""
-    with patch("click.prompt", side_effect=["HELP", "exit"]):
+    # Mock session to skip user selection
+    with patch("src.main.session.is_authenticated", return_value=True), \
+         patch("src.main.session.get_active_user_data", return_value={"name": "Test User"}), \
+         patch("click.prompt", side_effect=["HELP", "exit"]):
         interactive_mode()
 
     # Capture stdout
@@ -50,7 +56,10 @@ def test_interactive_mode_help_case_insensitive(capsys):
 
 def test_interactive_mode_help_command_specific(capsys):
     """Test that 'help <command>' shows command-specific help in interactive mode."""
-    with patch("click.prompt", side_effect=["help hello", "exit"]):
+    # Mock session to skip user selection
+    with patch("src.main.session.is_authenticated", return_value=True), \
+         patch("src.main.session.get_active_user_data", return_value={"name": "Test User"}), \
+         patch("click.prompt", side_effect=["help hello", "exit"]):
         interactive_mode()
 
     # Capture stdout
@@ -63,7 +72,10 @@ def test_interactive_mode_help_command_specific(capsys):
 
 def test_interactive_mode_help_nonexistent_command(capsys):
     """Test that 'help' with a non-existent command shows an error."""
-    with patch("click.prompt", side_effect=["help nonexistent", "exit"]):
+    # Mock session to skip user selection
+    with patch("src.main.session.is_authenticated", return_value=True), \
+         patch("src.main.session.get_active_user_data", return_value={"name": "Test User"}), \
+         patch("click.prompt", side_effect=["help nonexistent", "exit"]):
         interactive_mode()
 
     # Capture stderr (Click writes errors to stderr)

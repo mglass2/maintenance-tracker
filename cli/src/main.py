@@ -3,7 +3,9 @@
 import click
 import sys
 
+from src import session
 from src.commands.user import create_user
+from src.commands.auth import select_user, whoami, switch_user, logout
 
 
 @click.group()
@@ -19,11 +21,36 @@ def hello():
 
 
 cli.add_command(create_user)
+cli.add_command(select_user)
+cli.add_command(whoami)
+cli.add_command(switch_user)
+cli.add_command(logout)
 
 
 def interactive_mode():
     """Run the CLI in interactive mode, accepting commands until exit."""
     click.echo("Maintenance Tracker CLI - type 'help' for available commands or 'exit' to quit")
+
+    # Check if user is selected, prompt if not
+    if not session.is_authenticated():
+        click.echo("\n" + "="*60)
+        click.echo("User Identity Required")
+        click.echo("="*60)
+
+        # Invoke select-user command
+        ctx = click.Context(select_user)
+        ctx.invoke(select_user)
+
+        # Exit if user still not selected
+        if not session.is_authenticated():
+            click.echo("\nError: User selection required to use CLI. Exiting.")
+            sys.exit(1)
+
+    # Welcome message with active user
+    user_data = session.get_active_user_data()
+    click.echo(f"\nWelcome, {user_data['name']}!")
+    click.echo("="*60 + "\n")
+
     while True:
         try:
             user_input = click.prompt("tracker").strip()
