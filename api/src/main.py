@@ -4,10 +4,10 @@ from fastapi import FastAPI
 
 try:
     # Try relative imports first (when run as a package)
-    from .routes import users, items, tasks, item_types, task_types
+    from .routes import users, items, tasks, item_types, task_types, maintenance_templates
 except ImportError:
     # Fall back to absolute imports (when run with modified sys.path)
-    from routes import users, items, tasks, item_types, task_types
+    from routes import users, items, tasks, item_types, task_types, maintenance_templates
 
 app = FastAPI(
     title="Maintenance Tracker API",
@@ -21,6 +21,7 @@ app.include_router(items.router)
 app.include_router(tasks.router)
 app.include_router(item_types.router)
 app.include_router(task_types.router)
+app.include_router(maintenance_templates.router)
 
 
 @app.get("/")
