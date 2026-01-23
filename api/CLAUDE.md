@@ -1,5 +1,10 @@
+# Good CLI design
+- if the operator provides an empty input for a prompt, the CLI should preseent an appropriate error message and then reprompt the operator
+- 
+
 # Rules
 - Do not write code that hard deletes records.  Instead, prefer to use soft deletes via is_deleted flags.
+
 
 # Application Logic
 
@@ -21,7 +26,9 @@ Each type of task is either one-time, or recurring.  The
 
 
 # Future Features Todo (endpoints)
-- create maintenance_template record (default maintenance interval for a task type / item type combination)
-- create item_maintenance_plan record (actual maintenance plan for a given item / task type combination)
-- get future predicted task list for item (all tasks or by additive filter list)
-- 
+- CLI: utility/process to register the current session to a given user in the system.  this user identity will be passed to the API with each request automatically.
+- CLI: create user command
+- CLI: change user command that presents the user with a list of other users and lets them pick.
+- CLI: when launching the cli, check how many current users there are.  if there are 0, launch the create-user command.  if there is one, register the current session for that user.  if there are multiple users, launch the change user command. 
+- API: create item_maintenance_plan record (actual maintenance plan for a given item / task type combination)
+- API: get future predicted task list for item (all tasks or by additive filter list for task_type)
