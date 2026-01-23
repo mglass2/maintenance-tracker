@@ -15,3 +15,11 @@ class ResourceNotFoundError(Exception):
     def __init__(self, message: str) -> None:
         self.message = message
         super().__init__(message)
+
+
+class DuplicateNameError(Exception):
+    """Raised when attempting to create an item type with a name that already exists."""
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)

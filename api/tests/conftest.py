@@ -29,6 +29,7 @@ from main import app
 from models.user import User
 from models.item import Item
 from models.task import Task
+from models.item_type import ItemType
 
 
 @pytest.fixture(scope="function")
