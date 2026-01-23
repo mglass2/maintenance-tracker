@@ -37,14 +37,25 @@ def interactive_mode():
         click.echo("User Identity Required")
         click.echo("="*60)
 
-        # Invoke select-user command
-        ctx = click.Context(select_user)
-        ctx.invoke(select_user)
+        # Retry user selection up to 3 times
+        max_retries = 3
+        for attempt in range(max_retries):
+            ctx = click.Context(select_user)
+            ctx.invoke(select_user)
 
-        # Exit if user still not selected
-        if not session.is_authenticated():
-            click.echo("\nError: User selection required to use CLI. Exiting.")
-            sys.exit(1)
+            if session.is_authenticated():
+                break
+
+            if attempt < max_retries - 1:
+                click.echo(
+                    f"\nRetrying user selection ({attempt + 2}/{max_retries})...\n"
+                )
+            else:
+                click.echo(
+                    "\nError: Could not select user after multiple attempts.\n"
+                    "Please ensure the API service is running and try again."
+                )
+                sys.exit(1)
 
     # Welcome message with active user
     user_data = session.get_active_user_data()

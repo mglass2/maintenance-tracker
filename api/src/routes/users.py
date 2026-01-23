@@ -6,18 +6,54 @@ from sqlalchemy.orm import Session
 
 try:
     from ..database.connection import get_db
+    from ..models.user import User
     from ..schemas.users import UserCreateRequest, UserResponse
     from ..services.user_service import create_user
     from ..services.exceptions import DuplicateEmailError
     from ..utils.responses import success_response, error_response
 except ImportError:
     from database.connection import get_db
+    from models.user import User
     from schemas.users import UserCreateRequest, UserResponse
     from services.user_service import create_user
     from services.exceptions import DuplicateEmailError
     from utils.responses import success_response, error_response
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("")
+def list_users_endpoint(db: Session = Depends(get_db)):
+    """
+    List all active (non-deleted) users in the system.
+
+    Returns:
+        200 OK with list of users
+    """
+    try:
+        # Fetch all active users (not soft-deleted)
+        users = db.query(User).filter(User.is_deleted == False).all()
+
+        # Convert to response schema
+        user_responses = [
+            UserResponse.model_validate(user).model_dump()
+            for user in users
+        ]
+
+        return success_response(
+            data=user_responses,
+            message="Users retrieved successfully",
+            status_code=status.HTTP_200_OK,
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return error_response(
+            error="INTERNAL_ERROR",
+            message=f"An unexpected error occurred: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
