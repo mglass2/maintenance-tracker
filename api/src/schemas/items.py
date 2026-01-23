@@ -1,7 +1,7 @@
 """Pydantic schemas for item validation and serialization."""
 
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, field_validator, ConfigDict
 
 
@@ -91,3 +91,12 @@ class ItemResponse(BaseModel):
     acquired_at: Optional[date]
     created_at: datetime
     updated_at: datetime
+
+
+class ItemListResponse(BaseModel):
+    """Response schema for a list of items."""
+
+    model_config = ConfigDict(frozen=True)
+
+    items: List[ItemResponse]
+    count: int

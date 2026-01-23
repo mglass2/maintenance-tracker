@@ -1,5 +1,6 @@
 """Item service for business logic operations."""
 
+from typing import List
 from sqlalchemy.orm import Session
 
 try:
@@ -84,3 +85,37 @@ def create_item(db: Session, item_data: ItemCreateRequest) -> Item:
                     f"User with ID {item_data.user_id} not found"
                 )
         raise
+
+
+def get_items_by_user(db: Session, user_id: int) -> List[Item]:
+    """
+    Retrieve all items belonging to a specific user.
+
+    Args:
+        db: Database session
+        user_id: ID of the user whose items to retrieve
+
+    Returns:
+        List of Item instances (empty list if user has no items)
+
+    Raises:
+        ResourceNotFoundError: If user doesn't exist or is deleted
+    """
+    # Validate user exists and is not deleted
+    user = db.query(User).filter(
+        User.id == user_id,
+        User.is_deleted == False,
+    ).first()
+
+    if not user:
+        raise ResourceNotFoundError(
+            f"User with ID {user_id} not found or is deleted"
+        )
+
+    # Get all non-deleted items for this user
+    items = db.query(Item).filter(
+        Item.user_id == user_id,
+        Item.is_deleted == False,
+    ).order_by(Item.created_at.desc()).all()
+
+    return items
