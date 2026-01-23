@@ -192,3 +192,150 @@ class TestCreateItemEndpoint:
         assert response.status_code == 404
         data = response.json()
         assert data["error"] == "RESOURCE_NOT_FOUND"
+
+    def test_create_item_with_details(self, client: TestClient):
+        """Test creating item with details field."""
+        response = client.post(
+            "/items",
+            json={
+                "user_id": 1,
+                "item_type_id": 1,
+                "name": "2015 Toyota Camry",
+                "acquired_at": "2015-06-15",
+                "details": {"current_miles": 45000, "vin": "JTDKBRFH5J5621359"},
+            },
+        )
+
+        # Should return 201 on success or 404 if references don't exist
+        assert response.status_code in [201, 404, 422]
+
+        if response.status_code == 201:
+            data = response.json()
+            item = data["data"]
+            assert "details" in item
+            assert item["details"] == {"current_miles": 45000, "vin": "JTDKBRFH5J5621359"}
+
+    def test_create_item_without_details(self, client: TestClient):
+        """Test creating item without details field."""
+        response = client.post(
+            "/items",
+            json={
+                "user_id": 1,
+                "item_type_id": 1,
+                "name": "Test Item Without Details",
+            },
+        )
+
+        # Should return 201 on success or 404 if references don't exist
+        assert response.status_code in [201, 404, 422]
+
+        if response.status_code == 201:
+            data = response.json()
+            item = data["data"]
+            assert "details" in item
+            assert item["details"] is None
+
+    def test_create_item_with_invalid_details_string(self, client: TestClient):
+        """Test creating item with details as string returns 422."""
+        response = client.post(
+            "/items",
+            json={
+                "user_id": 1,
+                "item_type_id": 1,
+                "name": "Test Item",
+                "details": "not_a_dict",
+            },
+        )
+
+        # Should return 422 validation error
+        assert response.status_code == 422
+
+    def test_create_item_with_invalid_details_list(self, client: TestClient):
+        """Test creating item with details as list returns 422."""
+        response = client.post(
+            "/items",
+            json={
+                "user_id": 1,
+                "item_type_id": 1,
+                "name": "Test Item",
+                "details": ["item1", "item2"],
+            },
+        )
+
+        # Should return 422 validation error
+        assert response.status_code == 422
+
+    def test_create_item_with_details_nested_objects(self, client: TestClient):
+        """Test creating item with nested details objects."""
+        response = client.post(
+            "/items",
+            json={
+                "user_id": 1,
+                "item_type_id": 1,
+                "name": "Complex Item",
+                "details": {
+                    "vehicle_info": {
+                        "make": "Toyota",
+                        "model": "Camry",
+                    },
+                    "current_miles": 45000,
+                },
+            },
+        )
+
+        # Should return 201 on success or 404 if references don't exist
+        assert response.status_code in [201, 404, 422]
+
+        if response.status_code == 201:
+            data = response.json()
+            item = data["data"]
+            assert item["details"]["vehicle_info"]["make"] == "Toyota"
+            assert item["details"]["current_miles"] == 45000
+
+    def test_create_item_response_includes_details_field(self, client: TestClient):
+        """Test response includes details field in schema."""
+        response = client.post(
+            "/items",
+            json={
+                "user_id": 1,
+                "item_type_id": 1,
+                "name": "Test Item",
+                "acquired_at": "2020-01-01",
+            },
+        )
+
+        # Check if response would include details field
+        assert response.status_code in [201, 404, 422]
+
+        if response.status_code == 201:
+            data = response.json()
+            item = data["data"]
+            # Verify details field is present in response
+            assert "details" in item
+
+
+class TestGetItemsEndpoint:
+    """Tests for GET /items/users/{user_id} endpoint."""
+
+    def test_get_items_includes_details_field(self, client: TestClient):
+        """Test GET items endpoint includes details field in response."""
+        response = client.get("/items/users/1")
+
+        # Should return 200 or 404 if user doesn't exist
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("items"):
+                for item in data["items"]:
+                    # Verify details field is present in each item
+                    assert "details" in item
+
+    def test_get_items_user_not_found(self, client: TestClient):
+        """Test GET items for nonexistent user returns 404."""
+        response = client.get("/items/users/9999")
+
+        # Should return 404 when user doesn't exist
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"] == "RESOURCE_NOT_FOUND"

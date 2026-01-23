@@ -1,7 +1,7 @@
 """Pydantic schemas for item validation and serialization."""
 
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, field_validator, ConfigDict
 
 
@@ -15,6 +15,7 @@ class ItemCreateRequest(BaseModel):
                 "item_type_id": 1,
                 "name": "2015 Toyota Camry",
                 "acquired_at": "2015-06-15",
+                "details": {"current_miles": 45000, "vin": "JTDKBRFH5J5621359"},
             }
         }
     )
@@ -23,6 +24,7 @@ class ItemCreateRequest(BaseModel):
     item_type_id: int
     name: str
     acquired_at: Optional[date] = None
+    details: Optional[Dict[str, Any]] = None
 
     @field_validator("name", mode="before")
     @classmethod
@@ -62,6 +64,18 @@ class ItemCreateRequest(BaseModel):
             raise ValueError("Item type ID must be greater than 0")
         return v
 
+    @field_validator("details", mode="before")
+    @classmethod
+    def validate_details(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Validate details is a dictionary if provided."""
+        if v is None:
+            return None
+
+        if not isinstance(v, dict):
+            raise ValueError("details must be a dictionary (JSON object)")
+
+        return v
+
 
 class ItemResponse(BaseModel):
     """Response schema for item data."""
@@ -77,6 +91,7 @@ class ItemResponse(BaseModel):
                 "name": "2015 Toyota Camry",
                 "description": None,
                 "acquired_at": "2015-06-15",
+                "details": {"current_miles": 45000, "vin": "JTDKBRFH5J5621359"},
                 "created_at": "2026-01-23T12:00:00",
                 "updated_at": "2026-01-23T12:00:00",
             }
@@ -89,6 +104,7 @@ class ItemResponse(BaseModel):
     name: str
     description: Optional[str]
     acquired_at: Optional[date]
+    details: Optional[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
 

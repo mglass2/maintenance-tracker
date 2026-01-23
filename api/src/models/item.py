@@ -1,7 +1,7 @@
 """SQLAlchemy Item ORM model."""
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, Index, func, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, Index, func, ForeignKey, JSON
 from sqlalchemy.sql import expression
 
 try:
@@ -21,6 +21,7 @@ class Item(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     acquired_at = Column(Date, nullable=True)
+    details = Column(JSON, nullable=True)
     is_deleted = Column(
         Boolean,
         nullable=False,

@@ -59,6 +59,7 @@ def create_item(db: Session, item_data: ItemCreateRequest) -> Item:
         name=item_data.name,
         description=None,  # Always leave description empty per requirements
         acquired_at=item_data.acquired_at,
+        details=item_data.details,
     )
 
     try:
