@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, field_validator
 
@@ -82,3 +82,12 @@ class TaskResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True, "frozen": True}
+
+
+class TaskListResponse(BaseModel):
+    """Response schema for a list of tasks."""
+
+    model_config = {"frozen": True}
+
+    tasks: List[TaskResponse]
+    count: int

@@ -1,5 +1,6 @@
 """Task service for business logic operations."""
 
+from typing import List
 from sqlalchemy.orm import Session
 
 try:
@@ -83,3 +84,37 @@ def create_task(db: Session, task_data: TaskCreateRequest) -> Task:
                     f"Item with ID {task_data.item_id} not found"
                 )
         raise
+
+
+def get_tasks_by_item(db: Session, item_id: int) -> List[Task]:
+    """
+    Retrieve all tasks belonging to a specific item.
+
+    Args:
+        db: Database session
+        item_id: ID of the item whose tasks to retrieve
+
+    Returns:
+        List of Task instances (empty list if item has no tasks)
+
+    Raises:
+        ResourceNotFoundError: If item doesn't exist or is deleted
+    """
+    # Validate item exists and is not deleted
+    item = db.query(Item).filter(
+        Item.id == item_id,
+        Item.is_deleted == False,
+    ).first()
+
+    if not item:
+        raise ResourceNotFoundError(
+            f"Item with ID {item_id} not found or is deleted"
+        )
+
+    # Get all non-deleted tasks for this item
+    tasks = db.query(Task).filter(
+        Task.item_id == item_id,
+        Task.is_deleted == False,
+    ).order_by(Task.completed_at.desc()).all()
+
+    return tasks
