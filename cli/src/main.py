@@ -3,6 +3,8 @@
 import click
 import sys
 
+from src.commands.user import create_user
+
 
 @click.group()
 def cli():
@@ -14,6 +16,9 @@ def cli():
 def hello():
     """Test command to verify CLI is working."""
     click.echo("Hello from Maintenance Tracker CLI!")
+
+
+cli.add_command(create_user)
 
 
 def interactive_mode():
