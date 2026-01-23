@@ -27,6 +27,8 @@ from main import app
 
 # Import models to register them with Base
 from models.user import User
+from models.item import Item
+from models.task import Task
 
 
 @pytest.fixture(scope="function")

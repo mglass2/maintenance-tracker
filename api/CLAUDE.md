@@ -21,9 +21,6 @@ Each type of task is either one-time, or recurring.  The
 
 
 # Future Features Todo (endpoints)
-- create user
-- create item
-- create task
 - create task type
 - create item type
 - create maintenance_template record (default maintenance interval for a task type / item type combination)

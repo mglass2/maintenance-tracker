@@ -2,5 +2,6 @@
 
 from . import users
 from . import items
+from . import tasks
 
-__all__ = ["users", "items"]
+__all__ = ["users", "items", "tasks"]
