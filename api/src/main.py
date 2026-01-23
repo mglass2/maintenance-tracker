@@ -2,11 +2,21 @@
 
 from fastapi import FastAPI
 
+try:
+    # Try relative imports first (when run as a package)
+    from .routes import users
+except ImportError:
+    # Fall back to absolute imports (when run with modified sys.path)
+    from routes import users
+
 app = FastAPI(
     title="Maintenance Tracker API",
     description="API for managing and forecasting maintenance tasks",
     version="0.1.0",
 )
+
+# Include routers
+app.include_router(users.router)
 
 
 @app.get("/")
