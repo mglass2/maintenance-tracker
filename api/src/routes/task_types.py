@@ -6,14 +6,14 @@ from sqlalchemy.orm import Session
 
 try:
     from ..database.connection import get_db
-    from ..schemas.task_types import TaskTypeCreateRequest, TaskTypeResponse
-    from ..services.task_type_service import create_task_type
+    from ..schemas.task_types import TaskTypeCreateRequest, TaskTypeResponse, TaskTypeListResponse
+    from ..services.task_type_service import create_task_type, get_all_task_types
     from ..services.exceptions import DuplicateNameError
     from ..utils.responses import success_response, error_response
 except ImportError:
     from database.connection import get_db
-    from schemas.task_types import TaskTypeCreateRequest, TaskTypeResponse
-    from services.task_type_service import create_task_type
+    from schemas.task_types import TaskTypeCreateRequest, TaskTypeResponse, TaskTypeListResponse
+    from services.task_type_service import create_task_type, get_all_task_types
     from services.exceptions import DuplicateNameError
     from utils.responses import success_response, error_response
 
@@ -67,6 +67,47 @@ def create_task_type_endpoint(
             message="Invalid input provided",
             status_code=status.HTTP_400_BAD_REQUEST,
             details={"errors": e.errors()},
+        )
+
+    except Exception as e:
+        import traceback
+        print(f"DEBUG: Unexpected error: {type(e).__name__}: {str(e)}")
+        traceback.print_exc()
+        return error_response(
+            error="INTERNAL_ERROR",
+            message=f"An unexpected error occurred: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get("", status_code=status.HTTP_200_OK)
+def get_task_types_endpoint(
+    db: Session = Depends(get_db),
+):
+    """
+    Get all available task types.
+
+    Args:
+        db: Database session (dependency injected)
+
+    Returns:
+        200 OK with list of all non-deleted task types
+
+    Error responses:
+        - 500 Internal Server Error: Unexpected server error
+    """
+    try:
+        # Get all task types
+        task_types = get_all_task_types(db)
+
+        # Convert to response schema
+        task_type_responses = [TaskTypeResponse.model_validate(task_type) for task_type in task_types]
+        list_response = TaskTypeListResponse(task_types=task_type_responses, count=len(task_type_responses))
+
+        return success_response(
+            data=list_response.model_dump(mode="json"),
+            message=f"Retrieved {len(task_type_responses)} task types",
+            status_code=status.HTTP_200_OK,
         )
 
     except Exception as e:

@@ -73,3 +73,5 @@ class TestCreateTaskTypeEndpoint:
         )
 
         assert response.status_code == 422
+
+

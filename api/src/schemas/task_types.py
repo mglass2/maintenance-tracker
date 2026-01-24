@@ -1,7 +1,7 @@
 """Pydantic schemas for task type validation and responses."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, field_validator
 
@@ -52,3 +52,12 @@ class TaskTypeResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True, "frozen": True}
+
+
+class TaskTypeListResponse(BaseModel):
+    """Pydantic model for task type list response."""
+
+    task_types: List[TaskTypeResponse]
+    count: int
+
+    model_config = {"frozen": True}

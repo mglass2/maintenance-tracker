@@ -1,5 +1,6 @@
 """Task type service for business logic operations."""
 
+from typing import List
 from sqlalchemy.orm import Session
 
 try:
@@ -67,3 +68,20 @@ def create_task_type(db: Session, task_type_data: TaskTypeCreateRequest) -> Task
                 f"Task type with name '{task_type_data.name}' already exists"
             )
         raise
+
+
+def get_all_task_types(db: Session) -> List[TaskType]:
+    """
+    Retrieve all non-deleted task types.
+
+    Args:
+        db: Database session
+
+    Returns:
+        List of TaskType instances ordered by name
+    """
+    task_types = db.query(TaskType).filter(
+        TaskType.is_deleted == False,
+    ).order_by(TaskType.name).all()
+
+    return task_types
