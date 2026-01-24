@@ -1,0 +1,10 @@
+# CLI: create an item command
+
+Consider the POST /items endpoint in the API service of this application.  Create an CLI command in the CLI service of this application that:
+- uses the user id in the x-user-id header as the user_id that owns the item record.
+- collects the required information from the operator of the application (item type, name) in sequential order, like the create-user command
+- collects optional information from the operator of the application (acquired_at), but defaults to null if the user does not provide any input.  present the user with the appropriate date format (yyyy-mm-dd) when prompted for acquired_at.
+- after collecting information from the user that is directly part of the items table, the CLI command should ask the user if they have any other information to submit.  the workflow should be presented to the user in two steps: 1) "Would you like to save any other information about this item?  If so, enter the name for the information."  2) If the user inputs a name in step 1, the CLI should then ask "What value would you like to submit for {NAME}?".  The CLI should continue collecting additional fields in this manner until the user does not have any additional information to submit.  All additional information submitted by the user should be packaged into JSON key/value pairs and submitted as items.details.
+- waits for the response from the api and gives a confirmation message, either for the success or error of the call
+
+Provide a location in the code for the CLI command where a developer can specify a dictionary translation for the custom fields that are collected for the `details` json field.  for example, `translation = array.array('mileage', ['miles', 'mile', 'milage', 'milleage'])`, where all the values in the list are translated into the value used as the array key.
