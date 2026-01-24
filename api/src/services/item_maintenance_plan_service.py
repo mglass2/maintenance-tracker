@@ -1,5 +1,6 @@
 """Item maintenance plan service for business logic operations."""
 
+from typing import List
 from sqlalchemy.orm import Session
 
 try:
@@ -101,3 +102,37 @@ def create_item_maintenance_plan(
                 f"Item maintenance plan for item {plan_data.item_id} and task type {plan_data.task_type_id} already exists"
             )
         raise
+
+
+def get_plans_by_item(db: Session, item_id: int) -> List[ItemMaintenancePlan]:
+    """
+    Retrieve all maintenance plans for a specific item.
+
+    Args:
+        db: Database session
+        item_id: ID of the item
+
+    Returns:
+        List of ItemMaintenancePlan instances (empty list if none exist)
+
+    Raises:
+        ResourceNotFoundError: If item doesn't exist or is deleted
+    """
+    # Validate item_id exists and is not deleted
+    item = db.query(Item).filter(
+        Item.id == item_id,
+        Item.is_deleted == False,
+    ).first()
+
+    if not item:
+        raise ResourceNotFoundError(
+            f"Item with ID {item_id} not found or is deleted"
+        )
+
+    # Get all non-deleted plans for this item
+    plans = db.query(ItemMaintenancePlan).filter(
+        ItemMaintenancePlan.item_id == item_id,
+        ItemMaintenancePlan.is_deleted == False,
+    ).order_by(ItemMaintenancePlan.created_at.desc()).all()
+
+    return plans

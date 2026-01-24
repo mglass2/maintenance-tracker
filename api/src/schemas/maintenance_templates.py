@@ -68,3 +68,18 @@ class MaintenanceTemplateResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True, "frozen": True}
+
+
+class MaintenanceTemplateWithTaskTypeResponse(BaseModel):
+    """Pydantic model for maintenance template response with task type name."""
+
+    id: int
+    item_type_id: int
+    task_type_id: int
+    task_type_name: str
+    time_interval_days: int
+    custom_interval: Optional[Dict[str, Any]] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True, "frozen": True}

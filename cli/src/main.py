@@ -5,7 +5,7 @@ import sys
 
 from src import session
 from src.commands.user import create_user
-from src.commands.item import create_item
+from src.commands.item import create_item, create_item_maintenance_plan
 from src.commands.auth import select_user, whoami, switch_user, logout
 
 
@@ -23,6 +23,7 @@ def hello():
 
 cli.add_command(create_user)
 cli.add_command(create_item)
+cli.add_command(create_item_maintenance_plan)
 cli.add_command(select_user)
 cli.add_command(whoami)
 cli.add_command(switch_user)

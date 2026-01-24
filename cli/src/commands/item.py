@@ -60,6 +60,195 @@ def _convert_value_type(value: str) -> Any:
     return value
 
 
+@click.command(name="create-item-maintenance-plan")
+@click.argument("item_id", type=int)
+def create_item_maintenance_plan(item_id: int):
+    """Create maintenance plans for an item based on its maintenance templates.
+
+    ITEM_ID: The ID of the item to create maintenance plans for
+
+    This command will:
+    1. Fetch maintenance templates for the item's type
+    2. Guide you through selecting which templates to implement
+    3. Allow customization of maintenance intervals
+    4. Create item_maintenance_plan records
+    """
+    try:
+        with APIClient() as client:
+            # Step 1: Fetch item details
+            response = client._make_request("GET", f"/items/{item_id}")
+
+            if response.status_code != 200:
+                click.echo(f"✗ Error: Item with ID {item_id} not found", err=True)
+                return
+
+            item = response.data.get("data", {})
+            item_type_id = item.get("item_type_id")
+
+            click.echo(f"\nItem: {item.get('name')}")
+            click.echo(f"Setting up maintenance plan...\n")
+
+            # Step 2: Fetch maintenance templates
+            response = client._make_request(
+                "GET",
+                f"/maintenance_templates/item_types/{item_type_id}"
+            )
+
+            templates = response.data.get("data", [])
+
+            if not templates:
+                click.echo("✗ No maintenance templates available for this item type", err=True)
+                return
+
+            # Step 3: Fetch existing plans
+            response = client._make_request(
+                "GET",
+                f"/item_maintenance_plans/items/{item_id}"
+            )
+
+            existing_plans = response.data.get("data", [])
+            existing_task_type_ids = {plan.get("task_type_id") for plan in existing_plans}
+
+            # Step 4-6: Loop through templates, collect customizations, create plans
+            created_plans = []
+            skipped_plans = []
+
+            for template in templates:
+                task_type_id = template.get("task_type_id")
+                task_type_name = template.get("task_type_name")
+                default_time_interval = template.get("time_interval_days")
+                default_custom_interval = template.get("custom_interval")
+
+                # Skip if already exists
+                if task_type_id in existing_task_type_ids:
+                    click.echo(f"\n⊘ {task_type_name}: Already exists (skipping)")
+                    continue
+
+                # Ask user if they want to implement
+                click.echo(f"\n{'='*60}")
+                click.echo(f"Task Type: {task_type_name}")
+                click.echo(f"Default Interval: Every {default_time_interval} days")
+
+                if default_custom_interval:
+                    click.echo(f"Default Custom Interval: {json.dumps(default_custom_interval)}")
+
+                implement = None
+                while True:
+                    implement = click.prompt(
+                        "Implement this maintenance task? (yes/skip)",
+                        type=str,
+                        default="yes"
+                    ).strip().lower()
+
+                    if implement in ("yes", "y", ""):
+                        implement = "yes"
+                        break
+                    elif implement in ("skip", "s", "no", "n"):
+                        implement = "skip"
+                        break
+                    else:
+                        click.echo("Please enter 'yes' or 'skip'", err=True)
+
+                if implement == "skip":
+                    skipped_plans.append(task_type_name)
+                    click.echo(f"⊘ Skipped: {task_type_name}")
+                    continue
+
+                # Prompt for time_interval_days
+                time_interval_days = None
+                while True:
+                    time_input = click.prompt(
+                        f"Time interval in days (default: {default_time_interval})",
+                        type=str,
+                        default=str(default_time_interval)
+                    ).strip()
+
+                    try:
+                        time_interval_days = int(time_input)
+                        if time_interval_days <= 0:
+                            click.echo("Error: Interval must be greater than 0", err=True)
+                            continue
+                        break
+                    except ValueError:
+                        click.echo("Error: Please enter a valid number", err=True)
+
+                # Handle custom_interval if template has it
+                custom_interval = None
+                if default_custom_interval:
+                    click.echo(f"\nCustom Interval Configuration:")
+                    click.echo("The template defines these custom intervals:")
+
+                    custom_interval = {}
+                    for key, default_value in default_custom_interval.items():
+                        while True:
+                            value_input = click.prompt(
+                                f"  {key} (default: {default_value})",
+                                type=str,
+                                default=str(default_value)
+                            ).strip()
+
+                            # Try to preserve type from template
+                            if isinstance(default_value, int):
+                                try:
+                                    custom_interval[key] = int(value_input)
+                                    break
+                                except ValueError:
+                                    click.echo(f"Error: Please enter a valid number", err=True)
+                            else:
+                                custom_interval[key] = value_input
+                                break
+
+                # Create the plan
+                payload = {
+                    "item_id": item_id,
+                    "task_type_id": task_type_id,
+                    "time_interval_days": time_interval_days,
+                }
+
+                if custom_interval:
+                    payload["custom_interval"] = custom_interval
+
+                try:
+                    response = client._make_request(
+                        "POST",
+                        "/item_maintenance_plans",
+                        data=payload
+                    )
+
+                    if response.status_code == 201:
+                        created_plans.append(task_type_name)
+                        click.echo(f"✓ Created: {task_type_name}")
+                    elif response.status_code == 409:
+                        click.echo(f"⊘ Already exists: {task_type_name}")
+                    else:
+                        click.echo(f"✗ Failed to create: {task_type_name}", err=True)
+
+                except APIClientError4xx as e:
+                    click.echo(f"✗ Error creating plan for {task_type_name}: {e}", err=True)
+
+            # Step 7: Display summary
+            click.echo(f"\n{'='*60}")
+            click.echo("Maintenance Plan Setup Complete\n")
+
+            if created_plans:
+                click.echo(f"✓ Created {len(created_plans)} plan(s):")
+                for plan in created_plans:
+                    click.echo(f"  • {plan}")
+
+            if skipped_plans:
+                click.echo(f"\n⊘ Skipped {len(skipped_plans)} plan(s):")
+                for plan in skipped_plans:
+                    click.echo(f"  • {plan}")
+
+            if not created_plans and not skipped_plans:
+                click.echo("No new plans created (all already exist)")
+
+    except (APIConnectionError, APITimeoutError):
+        click.echo("\n✗ Error: Unable to connect to API", err=True)
+    except Exception as e:
+        click.echo(f"\n✗ Error: {str(e)}", err=True)
+
+
 @click.command(name="create-item")
 def create_item():
     """Create a new item in the system."""

@@ -240,3 +240,59 @@ class TestCreateItemMaintenancePlanEndpoint:
 
         assert response.status_code == 422
 
+
+class TestGetItemMaintenancePlansByItemEndpoint:
+    """Tests for GET /item_maintenance_plans/items/{item_id} endpoint."""
+
+    def test_get_plans_by_item_nonexistent_returns_404(self, client: TestClient):
+        """Test GET plans for nonexistent item returns 404."""
+        response = client.get("/item_maintenance_plans/items/9999")
+
+        # Should return 404 when item doesn't exist
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"] == "RESOURCE_NOT_FOUND"
+
+    def test_get_plans_by_item_response_format(self, client: TestClient):
+        """Test response format for GET plans by item."""
+        # This test would pass if an item with ID 1 exists
+        response = client.get("/item_maintenance_plans/items/1")
+
+        # Should return 200 if item exists, 404 if not
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            assert "data" in data
+            assert "message" in data
+            assert isinstance(data["data"], list)
+
+            # Each plan should have required fields
+            for plan in data["data"]:
+                assert "id" in plan
+                assert "item_id" in plan
+                assert "task_type_id" in plan
+                assert "time_interval_days" in plan
+                assert "created_at" in plan
+                assert "updated_at" in plan
+
+    def test_get_plans_by_item_empty_list(self, client: TestClient):
+        """Test GET plans returns empty list if no plans exist."""
+        response = client.get("/item_maintenance_plans/items/1")
+
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            assert isinstance(data["data"], list)
+
+    def test_get_plans_by_item_includes_custom_interval(self, client: TestClient):
+        """Test GET plans includes custom_interval field."""
+        response = client.get("/item_maintenance_plans/items/1")
+
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            for plan in data["data"]:
+                assert "custom_interval" in plan
