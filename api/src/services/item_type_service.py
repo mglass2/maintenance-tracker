@@ -1,5 +1,6 @@
 """Item type service for business logic operations."""
 
+from typing import List
 from sqlalchemy.orm import Session
 
 try:
@@ -67,3 +68,20 @@ def create_item_type(db: Session, item_type_data: ItemTypeCreateRequest) -> Item
                 f"Item type with name '{item_type_data.name}' already exists"
             )
         raise
+
+
+def get_all_item_types(db: Session) -> List[ItemType]:
+    """
+    Retrieve all non-deleted item types.
+
+    Args:
+        db: Database session
+
+    Returns:
+        List of ItemType instances ordered by name
+    """
+    item_types = db.query(ItemType).filter(
+        ItemType.is_deleted == False,
+    ).order_by(ItemType.name).all()
+
+    return item_types

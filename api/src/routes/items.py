@@ -1,6 +1,7 @@
 """Item routes for creating and managing items."""
 
-from fastapi import APIRouter, Depends, status
+from typing import Optional
+from fastapi import APIRouter, Depends, status, Header
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/items", tags=["items"])
 def create_item_endpoint(
     item_data: ItemCreateRequest,
     db: Session = Depends(get_db),
+    x_user_id: Optional[str] = Header(None),
 ):
     """
     Create a new item.
@@ -31,6 +33,7 @@ def create_item_endpoint(
     Args:
         item_data: Item creation request with user_id (optional), item_type_id, name, and acquired_at
         db: Database session (dependency injected)
+        x_user_id: User ID from x-user-id header (optional)
 
     Returns:
         201 Created with created item data
@@ -42,6 +45,14 @@ def create_item_endpoint(
         - 500 Internal Server Error: Unexpected server error
     """
     try:
+        # If user_id not provided in body but x-user-id header exists, populate it
+        if item_data.user_id is None and x_user_id:
+            try:
+                item_data.user_id = int(x_user_id)
+            except ValueError:
+                # Invalid format, let validation handle it
+                pass
+
         # Create item in database
         db_item = create_item(db, item_data)
 

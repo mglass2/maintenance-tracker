@@ -1,7 +1,7 @@
 """Pydantic schemas for item type validation and responses."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, field_validator
 
@@ -52,3 +52,12 @@ class ItemTypeResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True, "frozen": True}
+
+
+class ItemTypeListResponse(BaseModel):
+    """Pydantic model for item type list response."""
+
+    item_types: List[ItemTypeResponse]
+    count: int
+
+    model_config = {"frozen": True}

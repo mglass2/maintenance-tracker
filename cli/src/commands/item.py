@@ -1,0 +1,267 @@
+"""Item management commands for the Maintenance Tracker CLI."""
+
+import json
+from datetime import datetime
+from typing import Optional, Dict, Any
+
+import click
+
+from src.api_client import (
+    APIClient,
+    APIClientError4xx,
+    APIConnectionError,
+    APIServerError5xx,
+    APITimeoutError,
+)
+
+
+# Field translation dictionary for normalization
+FIELD_TRANSLATIONS = {
+    'mileage': ['miles', 'mile', 'milage', 'milleage', 'odometer'],
+    'vin': ['vehicle_id', 'vehicle_identification'],
+    'serial_number': ['serial', 'serial_no', 'sn'],
+    'purchase_price': ['price', 'cost', 'purchase_cost'],
+}
+
+
+def _translate_field_name(field_name: str) -> str:
+    """Normalize and translate field names to standard forms.
+
+    Args:
+        field_name: The field name to normalize
+
+    Returns:
+        The normalized field name
+    """
+    normalized = field_name.lower().replace(" ", "_")
+    for standard_name, variations in FIELD_TRANSLATIONS.items():
+        if normalized in variations or normalized == standard_name:
+            return standard_name
+    return normalized
+
+
+def _convert_value_type(value: str) -> Any:
+    """Convert string to int/float if possible, else string.
+
+    Args:
+        value: The string value to convert
+
+    Returns:
+        Converted value (int, float, or str)
+    """
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    return value
+
+
+@click.command(name="create-item")
+def create_item():
+    """Create a new item in the system."""
+
+    # Phase 1: Fetch and select item type
+    try:
+        with APIClient() as client:
+            response = client._make_request("GET", "/item_types")
+            if response.status_code != 200:
+                click.echo("Error: Unable to fetch item types from API", err=True)
+                return
+
+            types_data = response.data.get("data", {})
+            item_types = types_data.get("item_types", [])
+
+            if not item_types:
+                click.echo("Error: No item types available in the system", err=True)
+                return
+    except (APIConnectionError, APITimeoutError):
+        click.echo("\n✗ Error: Unable to connect to API", err=True)
+        click.echo("Please ensure the API service is running and try again.", err=True)
+        return
+    except APIServerError5xx:
+        click.echo("\n✗ Error: Server error occurred", err=True)
+        click.echo("Please try again later. If the problem persists, contact support.", err=True)
+        return
+    except Exception as e:
+        click.echo(f"\n✗ Error: An unexpected error occurred: {str(e)}", err=True)
+        return
+
+    # Display item types and prompt for selection
+    click.echo("\nAvailable Item Types:")
+    for idx, item_type in enumerate(item_types, 1):
+        name = item_type.get("name", "Unknown")
+        description = item_type.get("description", "")
+        if description:
+            click.echo(f"  {idx}. {name} - {description}")
+        else:
+            click.echo(f"  {idx}. {name}")
+
+    # Validate item type selection
+    selected_type_id = None
+    while True:
+        selection = click.prompt(f"Select an item type (1-{len(item_types)})", type=str, default="").strip()
+        if not selection:
+            click.echo("Error: Please select an item type", err=True)
+            continue
+
+        try:
+            selection_num = int(selection)
+            if 1 <= selection_num <= len(item_types):
+                selected_type_id = item_types[selection_num - 1].get("id")
+                break
+            else:
+                click.echo(f"Error: Please enter a number between 1 and {len(item_types)}", err=True)
+        except ValueError:
+            click.echo(f"Error: Please enter a valid number between 1 and {len(item_types)}", err=True)
+
+    # Phase 2: Collect item name (required)
+    while True:
+        name = click.prompt("Enter item name", type=str, default="").strip()
+        if not name:
+            click.echo("Error: Name cannot be empty", err=True)
+            continue
+
+        if len(name) > 255:
+            click.echo("Error: Name must be 255 characters or less", err=True)
+            continue
+
+        break
+
+    # Phase 3: Collect acquired date (optional)
+    acquired_at = None
+    while True:
+        date_input = click.prompt(
+            "Enter acquisition date (yyyy-mm-dd, or press Enter to skip)",
+            type=str,
+            default=""
+        ).strip()
+
+        if not date_input:
+            # User skipped
+            break
+
+        # Validate date format
+        try:
+            date_obj = datetime.strptime(date_input, "%Y-%m-%d")
+            acquired_at = date_obj.date().isoformat()
+            break
+        except ValueError:
+            click.echo("Error: Invalid date format. Please use yyyy-mm-dd (e.g., 2015-06-15)", err=True)
+
+    # Phase 4: Collect custom details (loop)
+    details = {}
+    while True:
+        add_detail = click.prompt(
+            "Would you like to save any other information about this item? (yes/no, or press Enter to skip)",
+            type=str,
+            default="no"
+        ).strip().lower()
+
+        if add_detail not in ("yes", "y", ""):
+            if add_detail == "no" or add_detail == "n":
+                break
+            click.echo("Please enter 'yes' or 'no'", err=True)
+            continue
+
+        if add_detail in ("yes", "y"):
+            field_name = click.prompt(
+                "Enter the name for the information (or press Enter to finish)",
+                type=str,
+                default=""
+            ).strip()
+
+            if not field_name:
+                break
+
+            # Normalize field name
+            normalized_field = _translate_field_name(field_name)
+
+            # Prompt for value
+            field_value = click.prompt(
+                f"What value would you like to submit for {normalized_field}?",
+                type=str,
+                default=""
+            ).strip()
+
+            if field_value:
+                # Convert value type
+                converted_value = _convert_value_type(field_value)
+                details[normalized_field] = converted_value
+                click.echo(f"✓ Added: {normalized_field} = {converted_value}")
+        else:
+            # Empty input means skip
+            break
+
+    # Phase 5: Submit to API
+    try:
+        with APIClient() as client:
+            # Build request payload
+            payload = {
+                "item_type_id": selected_type_id,
+                "name": name,
+            }
+
+            if acquired_at:
+                payload["acquired_at"] = acquired_at
+
+            if details:
+                payload["details"] = details
+
+            # POST to /items endpoint (x-user-id header automatically included by APIClient)
+            response = client._make_request("POST", "/items", data=payload)
+
+            # Phase 6: Display result
+            if response.status_code == 201:
+                item_data = response.data.get("data", {})
+                click.echo("\n✓ Success: Item created successfully!\n")
+                click.echo("Item Details:")
+                click.echo(f"  ID:          {item_data.get('id')}")
+                click.echo(f"  Name:        {item_data.get('name')}")
+                click.echo(f"  Item Type:   {item_data.get('item_type_id')}")
+                if item_data.get('acquired_at'):
+                    click.echo(f"  Acquired:    {item_data.get('acquired_at')}")
+                if item_data.get('details'):
+                    click.echo(f"  Details:     {json.dumps(item_data.get('details'))}")
+                click.echo(f"  Created:     {item_data.get('created_at')}")
+            else:
+                click.echo(f"Error: Unexpected response status {response.status_code}", err=True)
+
+    except APIClientError4xx as e:
+        # Handle client errors (400, 404, 422)
+        try:
+            error_data = json.loads(e.response_body) if isinstance(e.response_body, str) else e.response_body
+        except (json.JSONDecodeError, TypeError):
+            error_data = {}
+
+        if e.status_code == 404:
+            click.echo(f"\n✗ Error: {error_data.get('message', 'Resource not found')}", err=True)
+            click.echo("Please verify the item type exists and try again.", err=True)
+        elif e.status_code == 400:
+            click.echo("\n✗ Error: Invalid input provided", err=True)
+            details = error_data.get('details', {})
+            errors = details.get('errors', [])
+            if errors:
+                for error in errors:
+                    loc = error.get('loc', [])
+                    msg = error.get('msg', '')
+                    field = loc[-1] if loc else 'unknown'
+                    click.echo(f"  - {field}: {msg}", err=True)
+            else:
+                click.echo(f"  - {error_data.get('message', 'Validation failed')}", err=True)
+        else:
+            click.echo(f"\n✗ Error: {error_data.get('message', 'Request failed')}", err=True)
+
+    except (APIConnectionError, APITimeoutError):
+        click.echo("\n✗ Error: Unable to connect to API", err=True)
+        click.echo("Please ensure the API service is running and try again.", err=True)
+
+    except APIServerError5xx:
+        click.echo("\n✗ Error: Server error occurred", err=True)
+        click.echo("Please try again later. If the problem persists, contact support.", err=True)
+
+    except Exception as e:
+        click.echo(f"\n✗ Error: An unexpected error occurred: {str(e)}", err=True)
