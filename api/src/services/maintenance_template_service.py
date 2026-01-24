@@ -1,5 +1,6 @@
 """Maintenance template service for business logic operations."""
 
+from typing import List
 from sqlalchemy.orm import Session
 
 try:
@@ -101,3 +102,37 @@ def create_maintenance_template(
                 f"Maintenance template for item type {template_data.item_type_id} and task type {template_data.task_type_id} already exists"
             )
         raise
+
+
+def get_templates_by_item_type(db: Session, item_type_id: int) -> List[MaintenanceTemplate]:
+    """
+    Retrieve all maintenance templates for a specific item type.
+
+    Args:
+        db: Database session
+        item_type_id: ID of the item type
+
+    Returns:
+        List of MaintenanceTemplate instances (empty list if none exist)
+
+    Raises:
+        ResourceNotFoundError: If item_type doesn't exist or is deleted
+    """
+    # Validate item_type_id exists and is not deleted
+    item_type = db.query(ItemType).filter(
+        ItemType.id == item_type_id,
+        ItemType.is_deleted == False,
+    ).first()
+
+    if not item_type:
+        raise ResourceNotFoundError(
+            f"Item type with ID {item_type_id} not found or is deleted"
+        )
+
+    # Get all non-deleted templates for this item type
+    templates = db.query(MaintenanceTemplate).filter(
+        MaintenanceTemplate.item_type_id == item_type_id,
+        MaintenanceTemplate.is_deleted == False,
+    ).order_by(MaintenanceTemplate.created_at.desc()).all()
+
+    return templates

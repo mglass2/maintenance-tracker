@@ -120,3 +120,30 @@ def get_items_by_user(db: Session, user_id: int) -> List[Item]:
     ).order_by(Item.created_at.desc()).all()
 
     return items
+
+
+def get_item_by_id(db: Session, item_id: int) -> Item:
+    """
+    Retrieve a single item by ID.
+
+    Args:
+        db: Database session
+        item_id: ID of the item to retrieve
+
+    Returns:
+        Item instance
+
+    Raises:
+        ResourceNotFoundError: If item doesn't exist or is deleted
+    """
+    item = db.query(Item).filter(
+        Item.id == item_id,
+        Item.is_deleted == False,
+    ).first()
+
+    if not item:
+        raise ResourceNotFoundError(
+            f"Item with ID {item_id} not found or is deleted"
+        )
+
+    return item

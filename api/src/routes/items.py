@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 try:
     from ..database.connection import get_db
     from ..schemas.items import ItemCreateRequest, ItemResponse, ItemListResponse
-    from ..services.item_service import create_item, get_items_by_user
+    from ..services.item_service import create_item, get_items_by_user, get_item_by_id
     from ..services.exceptions import ResourceNotFoundError
     from ..utils.responses import success_response, error_response
 except ImportError:
     from database.connection import get_db
     from schemas.items import ItemCreateRequest, ItemResponse, ItemListResponse
-    from services.item_service import create_item, get_items_by_user
+    from services.item_service import create_item, get_items_by_user, get_item_by_id
     from services.exceptions import ResourceNotFoundError
     from utils.responses import success_response, error_response
 
@@ -121,6 +121,54 @@ def get_user_items_endpoint(
         return success_response(
             data=list_response.model_dump(mode="json"),
             message=f"Retrieved {len(item_responses)} items for user {user_id}",
+            status_code=status.HTTP_200_OK,
+        )
+
+    except ResourceNotFoundError as e:
+        return error_response(
+            error="RESOURCE_NOT_FOUND",
+            message=str(e),
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    except Exception as e:
+        import traceback
+        print(f"DEBUG: Unexpected error: {type(e).__name__}: {str(e)}")
+        traceback.print_exc()
+        return error_response(
+            error="INTERNAL_ERROR",
+            message=f"An unexpected error occurred: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get("/{item_id}", status_code=status.HTTP_200_OK)
+def get_item_endpoint(
+    item_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Get a single item by ID.
+
+    Args:
+        item_id: ID of the item to retrieve
+        db: Database session (dependency injected)
+
+    Returns:
+        200 OK with item data
+
+    Error responses:
+        - 404 Not Found: Item doesn't exist or is deleted
+        - 500 Internal Server Error: Unexpected server error
+    """
+    try:
+        item = get_item_by_id(db, item_id)
+
+        item_response = ItemResponse.model_validate(item)
+
+        return success_response(
+            data=item_response.model_dump(mode="json"),
+            message="Item retrieved successfully",
             status_code=status.HTTP_200_OK,
         )
 

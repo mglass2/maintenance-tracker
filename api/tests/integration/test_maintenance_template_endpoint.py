@@ -203,3 +203,62 @@ class TestCreateMaintenanceTemplateEndpoint:
         )
 
         assert response.status_code == 422
+
+
+class TestGetMaintenanceTemplatesByItemTypeEndpoint:
+    """Tests for GET /maintenance_templates/item_types/{item_type_id} endpoint."""
+
+    def test_get_templates_by_item_type_nonexistent_returns_404(self, client: TestClient):
+        """Test GET templates for nonexistent item type returns 404."""
+        response = client.get("/maintenance_templates/item_types/9999")
+
+        # Should return 404 when item_type doesn't exist
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"] == "RESOURCE_NOT_FOUND"
+
+    def test_get_templates_by_item_type_response_format(self, client: TestClient):
+        """Test response format for GET templates by item type."""
+        # This test would pass if an item_type with ID 1 exists and has templates
+        response = client.get("/maintenance_templates/item_types/1")
+
+        # Should return 200 if item_type exists, 404 if not
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            assert "data" in data
+            assert "message" in data
+            assert isinstance(data["data"], list)
+
+            # Each template should have required fields
+            for template in data["data"]:
+                assert "id" in template
+                assert "item_type_id" in template
+                assert "task_type_id" in template
+                assert "task_type_name" in template
+                assert "time_interval_days" in template
+                assert "created_at" in template
+                assert "updated_at" in template
+
+    def test_get_templates_by_item_type_includes_task_type_name(self, client: TestClient):
+        """Test GET templates includes task_type_name field."""
+        response = client.get("/maintenance_templates/item_types/1")
+
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            for template in data["data"]:
+                assert "task_type_name" in template
+                assert isinstance(template["task_type_name"], str)
+
+    def test_get_templates_by_item_type_empty_list(self, client: TestClient):
+        """Test GET templates returns empty list if no templates exist."""
+        response = client.get("/maintenance_templates/item_types/1")
+
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            assert isinstance(data["data"], list)

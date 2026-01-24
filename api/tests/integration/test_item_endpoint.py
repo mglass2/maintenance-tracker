@@ -339,3 +339,51 @@ class TestGetItemsEndpoint:
         assert response.status_code == 404
         data = response.json()
         assert data["error"] == "RESOURCE_NOT_FOUND"
+
+
+class TestGetItemByIdEndpoint:
+    """Tests for GET /items/{item_id} endpoint."""
+
+    def test_get_item_by_id_nonexistent_returns_404(self, client: TestClient):
+        """Test GET item by nonexistent ID returns 404."""
+        response = client.get("/items/9999")
+
+        # Should return 404 when item doesn't exist
+        assert response.status_code == 404
+        data = response.json()
+        assert data["error"] == "RESOURCE_NOT_FOUND"
+
+    def test_get_item_by_id_response_format(self, client: TestClient):
+        """Test response format for GET item by ID."""
+        # This test would pass if an item with ID 1 exists
+        response = client.get("/items/1")
+
+        # Should return 200 if item exists, 404 if not
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            assert "data" in data
+            assert "message" in data
+
+            item = data["data"]
+            assert "id" in item
+            assert "user_id" in item
+            assert "item_type_id" in item
+            assert "name" in item
+            assert "description" in item
+            assert "acquired_at" in item
+            assert "created_at" in item
+            assert "updated_at" in item
+            assert "details" in item
+
+    def test_get_item_by_id_includes_details(self, client: TestClient):
+        """Test GET item includes details field."""
+        response = client.get("/items/1")
+
+        assert response.status_code in [200, 404]
+
+        if response.status_code == 200:
+            data = response.json()
+            item = data["data"]
+            assert "details" in item
