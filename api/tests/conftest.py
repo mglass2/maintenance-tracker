@@ -31,6 +31,8 @@ from models.item import Item
 from models.task import Task
 from models.item_type import ItemType
 from models.task_type import TaskType
+from models.maintenance_template import MaintenanceTemplate
+from models.item_maintenance_plan import ItemMaintenancePlan
 
 
 @pytest.fixture(scope="function")

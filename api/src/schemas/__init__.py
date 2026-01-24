@@ -6,6 +6,7 @@ from .tasks import TaskCreateRequest, TaskResponse, TaskListResponse
 from .item_types import ItemTypeCreateRequest, ItemTypeResponse
 from .task_types import TaskTypeCreateRequest, TaskTypeResponse
 from .maintenance_templates import MaintenanceTemplateCreateRequest, MaintenanceTemplateResponse
+from .item_maintenance_plans import ItemMaintenancePlanCreateRequest, ItemMaintenancePlanResponse
 
 __all__ = [
     "UserCreateRequest",
@@ -22,5 +23,7 @@ __all__ = [
     "TaskTypeResponse",
     "MaintenanceTemplateCreateRequest",
     "MaintenanceTemplateResponse",
+    "ItemMaintenancePlanCreateRequest",
+    "ItemMaintenancePlanResponse",
     "ErrorResponse",
 ]
