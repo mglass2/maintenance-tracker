@@ -5,15 +5,20 @@ from fastapi import FastAPI
 try:
     # Try relative imports first (when run as a package)
     from .routes import users, items, tasks, item_types, task_types, maintenance_templates
+    from .middleware.request_logging import request_logging_middleware
 except ImportError:
     # Fall back to absolute imports (when run with modified sys.path)
     from routes import users, items, tasks, item_types, task_types, maintenance_templates
+    from middleware.request_logging import request_logging_middleware
 
 app = FastAPI(
     title="Maintenance Tracker API",
     description="API for managing and forecasting maintenance tasks",
     version="0.1.0",
 )
+
+# Apply request logging middleware
+app.middleware("http")(request_logging_middleware)
 
 # Include routers
 app.include_router(users.router)
