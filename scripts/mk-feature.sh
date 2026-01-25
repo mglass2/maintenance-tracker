@@ -11,8 +11,14 @@ if [ -z "$1" ]; then
 fi
 
 dir="$(dirname "${BASH_SOURCE[0]}")"
+filename="$dir/../docs/features/$1"
 
-cat << EOF > "$dir/../docs/features/$1"
+if [ -e $filename ]; then
+  echo -e "Filename already exists.  Choose another one.\n"
+  exit 1
+fi
+
+cat << EOF > $filename
 # [CLI/API/DB]: [TITLE]
 
 ## Goal: [...]
