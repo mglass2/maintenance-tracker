@@ -23,3 +23,15 @@ class DuplicateNameError(Exception):
     def __init__(self, message: str) -> None:
         self.message = message
         super().__init__(message)
+
+
+class InvalidForecastDataError(Exception):
+    """Raised when forecast data is missing or malformed."""
+
+    pass
+
+
+class MissingForecastKeyError(Exception):
+    """Raised when required forecast key is missing."""
+
+    pass

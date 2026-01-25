@@ -10,12 +10,16 @@ from fastapi.testclient import TestClient
 # Add src directory to Python path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
-# Use in-memory SQLite for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+# Use PostgreSQL for testing (to support JSONB and other PG-specific types)
+# Database URL from environment or default for local development
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@db:5432/maintenance_tracker_test"
+)
 
 test_engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    DATABASE_URL,
+    echo=False,
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
@@ -44,7 +48,10 @@ def db():
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(bind=test_engine)
+        # Drop all tables with CASCADE to handle foreign key constraints
+        with test_engine.begin() as connection:
+            connection.exec_driver_sql("DROP SCHEMA public CASCADE")
+            connection.exec_driver_sql("CREATE SCHEMA public")
 
 
 @pytest.fixture(scope="function")
