@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel, field_validator
 
@@ -15,6 +15,7 @@ class TaskCreateRequest(BaseModel):
     completed_at: date
     notes: Optional[str] = None
     cost: Optional[Decimal] = None
+    details: Optional[Dict[str, Any]] = None
 
     @field_validator("item_id", mode="before")
     @classmethod
@@ -68,6 +69,18 @@ class TaskCreateRequest(BaseModel):
         v = v.strip()
         return v if v else None
 
+    @field_validator("details", mode="before")
+    @classmethod
+    def validate_details(cls, v):
+        """Validate details is a dict if provided."""
+        if v is None:
+            return None
+
+        if not isinstance(v, dict):
+            raise ValueError("details must be a JSON object (dict)")
+
+        return v
+
 
 class TaskResponse(BaseModel):
     """Pydantic model for task response."""
@@ -78,6 +91,7 @@ class TaskResponse(BaseModel):
     completed_at: date
     notes: Optional[str] = None
     cost: Optional[Decimal] = None
+    details: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
 

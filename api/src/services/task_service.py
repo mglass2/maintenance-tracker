@@ -58,6 +58,7 @@ def create_task(db: Session, task_data: TaskCreateRequest) -> Task:
         completed_at=task_data.completed_at,
         notes=task_data.notes,
         cost=task_data.cost,
+        details=task_data.details,
     )
 
     try:

@@ -3,6 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, Index, func, Numeric
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import expression
 
 try:
@@ -22,6 +23,7 @@ class Task(Base):
     completed_at = Column(Date, nullable=False)
     notes = Column(Text, nullable=True)
     cost = Column(Numeric(10, 2), nullable=True)
+    details = Column(JSONB, nullable=True)
     is_deleted = Column(
         Boolean,
         nullable=False,

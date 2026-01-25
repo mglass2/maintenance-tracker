@@ -58,3 +58,50 @@ class TestCreateTask:
         assert task_data.notes is None
         assert task_data.cost is None
         assert task_data.item_id == 4
+
+    def test_create_task_with_details(self):
+        """Test that create_task accepts task with details."""
+        task_data = TaskCreateRequest(
+            item_id=1,
+            task_type_id=1,
+            completed_at=date(2024, 1, 15),
+            details={"mileage": 75000, "oil_type": "5W-30"},
+        )
+
+        assert task_data.details == {"mileage": 75000, "oil_type": "5W-30"}
+        assert task_data.item_id == 1
+
+    def test_create_task_without_details(self):
+        """Test that create_task accepts task without details."""
+        task_data = TaskCreateRequest(
+            item_id=1,
+            task_type_id=1,
+            completed_at=date(2024, 1, 15),
+        )
+
+        assert task_data.details is None
+        assert task_data.item_id == 1
+
+    def test_create_task_with_empty_details_dict(self):
+        """Test that create_task accepts empty details dict."""
+        task_data = TaskCreateRequest(
+            item_id=1,
+            task_type_id=1,
+            completed_at=date(2024, 1, 15),
+            details={},
+        )
+
+        assert task_data.details == {}
+
+    def test_create_task_with_details_and_notes(self):
+        """Test that create_task accepts task with both details and notes."""
+        task_data = TaskCreateRequest(
+            item_id=1,
+            task_type_id=1,
+            completed_at=date(2024, 1, 15),
+            notes="Oil change",
+            details={"mileage": 75000},
+        )
+
+        assert task_data.notes == "Oil change"
+        assert task_data.details == {"mileage": 75000}
