@@ -13,6 +13,7 @@ from src.api_client import (
     APIServerError5xx,
     APITimeoutError,
 )
+from src.session import get_active_user_id
 
 
 # Field translation dictionary for normalization
@@ -61,11 +62,11 @@ def _convert_value_type(value: str) -> Any:
 
 
 @click.command(name="create-item-maintenance-plan")
-@click.argument("item_id", type=int)
-def create_item_maintenance_plan(item_id: int):
+def create_item_maintenance_plan(item_id=None):
     """Create maintenance plans for an item based on its maintenance templates.
 
-    ITEM_ID: The ID of the item to create maintenance plans for
+    If ITEM_ID is provided, it will be used directly.
+    If not provided, you will be prompted to select from your items.
 
     This command will:
     1. Fetch maintenance templates for the item's type
@@ -73,6 +74,80 @@ def create_item_maintenance_plan(item_id: int):
     3. Allow customization of maintenance intervals
     4. Create item_maintenance_plan records
     """
+    # If no item_id provided, prompt user to select from their items
+    if item_id is None:
+        # Check authentication
+        user_id = get_active_user_id()
+        if not user_id:
+            click.echo("\n✗ Error: No user selected", err=True)
+            click.echo("Please run 'select-user' command first.", err=True)
+            return
+
+        # Fetch user's items
+        try:
+            with APIClient() as client:
+                response = client._make_request("GET", f"/items/users/{user_id}")
+                if response.status_code != 200:
+                    click.echo("Error: Unable to fetch items from API", err=True)
+                    return
+
+                items_data = response.data.get("data", {})
+                items = items_data.get("items", [])
+
+                if not items:
+                    click.echo("\n✗ Error: No items found for your account", err=True)
+                    click.echo("Please create an item first using 'create-item' command.", err=True)
+                    return
+        except (APIConnectionError, APITimeoutError):
+            click.echo("\n✗ Error: Unable to connect to API", err=True)
+            click.echo("Please ensure the API service is running and try again.", err=True)
+            return
+        except APIServerError5xx:
+            click.echo("\n✗ Error: Server error occurred", err=True)
+            return
+        except Exception as e:
+            click.echo(f"\n✗ Error: An unexpected error occurred: {str(e)}", err=True)
+            return
+
+        # Display items and prompt for selection
+        click.echo("\nYour Items:")
+        for idx, item in enumerate(items, 1):
+            name = item.get("name", "Unknown")
+            item_type_name = item.get("item_type_name", "Unknown Type")
+            click.echo(f"  {idx}. {name} ({item_type_name})")
+
+        # Validate selection
+        selected_item = None
+        while True:
+            selection = click.prompt(
+                f"Select an item (1-{len(items)})",
+                type=str,
+                default=""
+            ).strip()
+            if not selection:
+                click.echo("Error: Please select an item", err=True)
+                continue
+
+            try:
+                selection_num = int(selection)
+                if 1 <= selection_num <= len(items):
+                    selected_item = items[selection_num - 1]
+                    break
+                else:
+                    click.echo(
+                        f"Error: Please enter a number between 1 and {len(items)}",
+                        err=True
+                    )
+            except ValueError:
+                click.echo(
+                    f"Error: Please enter a valid number between 1 and {len(items)}",
+                    err=True
+                )
+
+        item_id = selected_item.get("id")
+        click.echo(f"\nSelected: {selected_item.get('name')}")
+
+    # Continue with existing logic using item_id
     try:
         with APIClient() as client:
             # Step 1: Fetch item details
