@@ -1,0 +1,1 @@
+when creating a new item type, and then selecting 'yes' to creating a new maintenance template, the user is prompted to reselect the item type.  It should automatically select the newly created item type when passing the user into the new maintenance template process.
