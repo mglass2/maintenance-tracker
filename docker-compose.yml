@@ -38,6 +38,11 @@ services:
       - ./api/tests:/app/tests
     networks:
       - maintenance-network
+    healthcheck:                                                                                                                           
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]                                                                          
+      interval: 6s                                                                                                                        
+      timeout: 3s                                                                                                                          
+      retries: 10 
     restart: unless-stopped
 
   cli:
@@ -50,7 +55,8 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     volumes:
       - ./cli/src:/app/src
       - ./cli/tests:/app/tests

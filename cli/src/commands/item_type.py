@@ -20,6 +20,44 @@ def create_item_type():
     (e.g., Car, House, Snowblower). After creating an item type, you can
     optionally set up maintenance templates for it.
     """
+
+    # Query for current item types
+    try:
+        with APIClient() as client:
+            response = client._make_request("GET", "/item_types")
+            if response.status_code != 200:
+                click.echo("Error: Unable to fetch item types from API", err=True)
+                return
+
+            types_data = response.data.get("data", {})
+            item_types = types_data.get("item_types", [])
+
+    except (APIConnectionError, APITimeoutError):
+        click.echo("\n✗ Error: Unable to connect to API", err=True)
+        click.echo("Please ensure the API service is running and try again.", err=True)
+        return
+    except APIServerError5xx:
+        click.echo("\n✗ Error: Server error occurred", err=True)
+        click.echo("Please try again later. If the problem persists, contact support.", err=True)
+        return
+    except Exception as e:
+        click.echo(f"\n✗ Error: An unexpected error occurred: {str(e)}", err=True)
+        return
+
+    # Display item types if any exist
+    if item_types:
+        click.echo("\nExisting Item Types:")
+        for idx, item_type in enumerate(item_types, 1):
+            name = item_type.get("name", "Unknown")
+            description = item_type.get("description", "")
+            if description:
+                click.echo(f"  {idx}. {name} - {description}")
+            else:
+                click.echo(f"  {idx}. {name}")
+        click.echo()
+    else:
+        click.echo(f"\nNo item types exist.\n")
+
     # Phase 1: Collect name (required)
     while True:
         name = click.prompt("Enter item type name", type=str, default="").strip()

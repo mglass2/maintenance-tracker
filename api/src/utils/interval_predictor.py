@@ -5,8 +5,8 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
 
-from models.item import Item
-from services.exceptions import (
+from ..models.item import Item
+from ..services.exceptions import (
     InvalidForecastDataError,
     MissingForecastKeyError,
     ResourceNotFoundError,
@@ -103,9 +103,7 @@ class IntervalPredictor:
         # Extract data
         start_date = self._parse_date(measurement_data["start_date"], "start_date")
         start_measurement = measurement_data["start_measurement"]
-        reference_date = self._parse_date(
-            measurement_data["reference_date"], "reference_date"
-        )
+        reference_date = self._parse_date(measurement_data["reference_date"], "reference_date")
         reference_measurement = measurement_data["reference_measurement"]
 
         # Validate data values
