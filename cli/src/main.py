@@ -7,6 +7,7 @@ from src.commands.user import create_user
 from src.commands.item import create_item, create_item_maintenance_plan
 from src.commands.item_type import create_item_type
 from src.commands.maintenance_template import create_maintenance_template
+from src.commands.task import create_task
 from src.commands.auth import select_user, whoami, switch_user, logout
 from src.utils.interactive import run_interactive_mode
 
@@ -27,6 +28,7 @@ cli.add_command(create_user)
 cli.add_command(create_item)
 cli.add_command(create_item_type)
 cli.add_command(create_item_maintenance_plan)
+cli.add_command(create_task)
 cli.add_command(create_maintenance_template)
 cli.add_command(select_user)
 cli.add_command(whoami)
