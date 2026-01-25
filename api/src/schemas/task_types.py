@@ -11,6 +11,7 @@ class TaskTypeCreateRequest(BaseModel):
 
     name: str
     description: Optional[str] = None
+    item_type_id: int
 
     @field_validator("name", mode="before")
     @classmethod
@@ -41,6 +42,16 @@ class TaskTypeCreateRequest(BaseModel):
         v = v.strip()
         return v if v else None
 
+    @field_validator("item_type_id", mode="before")
+    @classmethod
+    def validate_item_type_id(cls, v) -> int:
+        """Validate that item_type_id is a positive integer."""
+        if not isinstance(v, int):
+            raise ValueError("item_type_id must be an integer")
+        if v <= 0:
+            raise ValueError("item_type_id must be a positive integer")
+        return v
+
 
 class TaskTypeResponse(BaseModel):
     """Pydantic model for task type response."""
@@ -48,6 +59,7 @@ class TaskTypeResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+    item_type_id: int
     created_at: datetime
     updated_at: datetime
 

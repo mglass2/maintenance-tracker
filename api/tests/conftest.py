@@ -67,3 +67,39 @@ def client(db: Session):
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+def db_with_item_types(db: Session):
+    """Create a test database with pre-populated item types."""
+    # Insert test item types
+    item_type_automobile = ItemType(
+        name="Automobile",
+        description="Motor vehicles including cars, trucks, and motorcycles"
+    )
+    item_type_house = ItemType(
+        name="House",
+        description="Residential buildings and properties"
+    )
+    db.add(item_type_automobile)
+    db.add(item_type_house)
+    db.commit()
+    db.refresh(item_type_automobile)
+    db.refresh(item_type_house)
+
+    return db
+
+
+@pytest.fixture(scope="function")
+def client_with_item_types(db_with_item_types: Session):
+    """Create a test client with overridden database dependency and pre-populated item types."""
+
+    def override_get_db():
+        try:
+            yield db_with_item_types
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()

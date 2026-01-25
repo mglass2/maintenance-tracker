@@ -25,7 +25,7 @@ class TestCreateMaintenanceTemplate:
         db.refresh(item_type)
 
         # Create task type
-        task_type = TaskType(name="Oil Change")
+        task_type = TaskType(name="Oil Change", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -55,7 +55,7 @@ class TestCreateMaintenanceTemplate:
         db.refresh(item_type)
 
         # Create task type
-        task_type = TaskType(name="Tire Rotation")
+        task_type = TaskType(name="Tire Rotation", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -75,8 +75,14 @@ class TestCreateMaintenanceTemplate:
 
     def test_create_nonexistent_item_type_raises_error(self, db: Session):
         """Test creating with nonexistent item_type_id raises ResourceNotFoundError."""
-        # Create task type
-        task_type = TaskType(name="Test Task")
+        # Create task type with a dummy item_type_id that we'll reference
+        # (it won't be used for the test since we're testing with a non-existent item_type)
+        item_type_dummy = ItemType(name="Dummy Item Type")
+        db.add(item_type_dummy)
+        db.commit()
+        db.refresh(item_type_dummy)
+
+        task_type = TaskType(name="Test Task", item_type_id=item_type_dummy.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -120,7 +126,7 @@ class TestCreateMaintenanceTemplate:
         db.refresh(item_type)
 
         # Create task type
-        task_type = TaskType(name="Duplicate Test Task")
+        task_type = TaskType(name="Duplicate Test Task", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -152,8 +158,8 @@ class TestCreateMaintenanceTemplate:
         db.commit()
         db.refresh(item_type)
 
-        # Create task type
-        task_type = TaskType(name="Task for Deleted Item")
+        # Create task type (using the deleted item_type for the association)
+        task_type = TaskType(name="Task for Deleted Item", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -178,7 +184,7 @@ class TestCreateMaintenanceTemplate:
         db.refresh(item_type)
 
         # Create and delete task type
-        task_type = TaskType(name="Deleted Task Type", is_deleted=True)
+        task_type = TaskType(name="Deleted Task Type", item_type_id=item_type.id, is_deleted=True)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -203,8 +209,8 @@ class TestCreateMaintenanceTemplate:
         db.refresh(item_type)
 
         # Create two task types
-        task_type1 = TaskType(name="Task Type 1")
-        task_type2 = TaskType(name="Task Type 2")
+        task_type1 = TaskType(name="Task Type 1", item_type_id=item_type.id)
+        task_type2 = TaskType(name="Task Type 2", item_type_id=item_type.id)
         db.add_all([task_type1, task_type2])
         db.commit()
         db.refresh(task_type1)
@@ -252,7 +258,7 @@ class TestGetAllTemplatesGroupedByItemType:
         db.refresh(item_type)
 
         # Create task type
-        task_type = TaskType(name="Oil Change")
+        task_type = TaskType(name="Oil Change", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -286,8 +292,8 @@ class TestGetAllTemplatesGroupedByItemType:
         db.refresh(item_type2)
 
         # Create task types
-        task_type1 = TaskType(name="Oil Change")
-        task_type2 = TaskType(name="Roof Inspection")
+        task_type1 = TaskType(name="Oil Change", item_type_id=item_type1.id)
+        task_type2 = TaskType(name="Roof Inspection", item_type_id=item_type2.id)
         db.add_all([task_type1, task_type2])
         db.commit()
         db.refresh(task_type1)
@@ -323,9 +329,9 @@ class TestGetAllTemplatesGroupedByItemType:
         db.refresh(item_type)
 
         # Create task types
-        task_type1 = TaskType(name="Oil Change")
-        task_type2 = TaskType(name="Tire Rotation")
-        task_type3 = TaskType(name="Brake Inspection")
+        task_type1 = TaskType(name="Oil Change", item_type_id=item_type.id)
+        task_type2 = TaskType(name="Tire Rotation", item_type_id=item_type.id)
+        task_type3 = TaskType(name="Brake Inspection", item_type_id=item_type.id)
         db.add_all([task_type1, task_type2, task_type3])
         db.commit()
         db.refresh(task_type1)
@@ -368,8 +374,8 @@ class TestGetAllTemplatesGroupedByItemType:
         db.refresh(item_type)
 
         # Create task types
-        task_type1 = TaskType(name="Oil Change")
-        task_type2 = TaskType(name="Tire Rotation")
+        task_type1 = TaskType(name="Oil Change", item_type_id=item_type.id)
+        task_type2 = TaskType(name="Tire Rotation", item_type_id=item_type.id)
         db.add_all([task_type1, task_type2])
         db.commit()
         db.refresh(task_type1)
@@ -407,8 +413,8 @@ class TestGetAllTemplatesGroupedByItemType:
         db.refresh(item_type2)
 
         # Create task types
-        task_type1 = TaskType(name="Oil Change")
-        task_type2 = TaskType(name="Roof Inspection")
+        task_type1 = TaskType(name="Oil Change", item_type_id=item_type1.id)
+        task_type2 = TaskType(name="Roof Inspection", item_type_id=item_type2.id)
         db.add_all([task_type1, task_type2])
         db.commit()
         db.refresh(task_type1)
@@ -443,7 +449,7 @@ class TestGetAllTemplatesGroupedByItemType:
         db.refresh(item_type)
 
         # Create task type
-        task_type = TaskType(name="Tire Rotation")
+        task_type = TaskType(name="Tire Rotation", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -472,7 +478,7 @@ class TestGetAllTemplatesGroupedByItemType:
         db.refresh(item_type)
 
         # Create task type
-        task_type = TaskType(name="Oil Change")
+        task_type = TaskType(name="Oil Change", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)

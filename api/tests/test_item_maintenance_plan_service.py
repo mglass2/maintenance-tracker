@@ -36,7 +36,7 @@ class TestCreateItemMaintenancePlan:
         db.refresh(item)
 
         # Create task type
-        task_type = TaskType(name="Oil Change")
+        task_type = TaskType(name="Oil Change", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -78,7 +78,7 @@ class TestCreateItemMaintenancePlan:
         db.refresh(item)
 
         # Create task type
-        task_type = TaskType(name="Tire Rotation")
+        task_type = TaskType(name="Tire Rotation", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -98,8 +98,14 @@ class TestCreateItemMaintenancePlan:
 
     def test_create_nonexistent_item_raises_error(self, db: Session):
         """Test creating with nonexistent item_id raises ResourceNotFoundError."""
+        # Create a dummy item type for the task type (since task_type.item_type_id is required)
+        item_type_dummy = ItemType(name="Dummy Item Type")
+        db.add(item_type_dummy)
+        db.commit()
+        db.refresh(item_type_dummy)
+
         # Create task type
-        task_type = TaskType(name="Test Task")
+        task_type = TaskType(name="Test Task", item_type_id=item_type_dummy.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -167,7 +173,7 @@ class TestCreateItemMaintenancePlan:
         db.refresh(item)
 
         # Create task type
-        task_type = TaskType(name="Duplicate Test Task")
+        task_type = TaskType(name="Duplicate Test Task", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -212,7 +218,7 @@ class TestCreateItemMaintenancePlan:
         db.refresh(item)
 
         # Create task type
-        task_type = TaskType(name="Task for Deleted Item")
+        task_type = TaskType(name="Task for Deleted Item", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -249,7 +255,7 @@ class TestCreateItemMaintenancePlan:
         db.refresh(item)
 
         # Create and delete task type
-        task_type = TaskType(name="Deleted Task Type", is_deleted=True)
+        task_type = TaskType(name="Deleted Task Type", item_type_id=item_type.id, is_deleted=True)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -286,8 +292,8 @@ class TestCreateItemMaintenancePlan:
         db.refresh(item)
 
         # Create two task types
-        task_type1 = TaskType(name="Task Type 1")
-        task_type2 = TaskType(name="Task Type 2")
+        task_type1 = TaskType(name="Task Type 1", item_type_id=item_type.id)
+        task_type2 = TaskType(name="Task Type 2", item_type_id=item_type.id)
         db.add_all([task_type1, task_type2])
         db.commit()
         db.refresh(task_type1)

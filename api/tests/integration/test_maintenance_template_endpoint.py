@@ -289,7 +289,7 @@ class TestGetAllTemplatesEndpoint:
         db.commit()
         db.refresh(item_type)
 
-        task_type = TaskType(name="Oil Change")
+        task_type = TaskType(name="Oil Change", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -341,8 +341,8 @@ class TestGetAllTemplatesEndpoint:
         db.refresh(item_type2)
 
         # Create task types
-        task_type1 = TaskType(name="Oil Change")
-        task_type2 = TaskType(name="Roof Inspection")
+        task_type1 = TaskType(name="Oil Change", item_type_id=item_type1.id)
+        task_type2 = TaskType(name="Roof Inspection", item_type_id=item_type2.id)
         db.add_all([task_type1, task_type2])
         db.commit()
         db.refresh(task_type1)
@@ -384,7 +384,7 @@ class TestGetAllTemplatesEndpoint:
         db.commit()
         db.refresh(item_type)
 
-        task_type = TaskType(name="Tire Rotation")
+        task_type = TaskType(name="Tire Rotation", item_type_id=item_type.id)
         db.add(task_type)
         db.commit()
         db.refresh(task_type)
@@ -418,8 +418,8 @@ class TestGetAllTemplatesEndpoint:
         db.commit()
         db.refresh(item_type)
 
-        task_type1 = TaskType(name="Oil Change")
-        task_type2 = TaskType(name="Tire Rotation")
+        task_type1 = TaskType(name="Oil Change", item_type_id=item_type.id)
+        task_type2 = TaskType(name="Tire Rotation", item_type_id=item_type.id)
         db.add_all([task_type1, task_type2])
         db.commit()
         db.refresh(task_type1)

@@ -14,24 +14,29 @@ class TestTaskTypeCreateRequest:
         task_type_data = TaskTypeCreateRequest(
             name="Oil Change",
             description="Regular oil and filter replacement",
+            item_type_id=1,
         )
 
         assert task_type_data.name == "Oil Change"
         assert task_type_data.description == "Regular oil and filter replacement"
+        assert task_type_data.item_type_id == 1
 
     def test_create_task_type_minimal_required_fields(self):
         """Test task type creation with only required fields."""
         task_type_data = TaskTypeCreateRequest(
             name="Brake Inspection",
+            item_type_id=1,
         )
 
         assert task_type_data.name == "Brake Inspection"
         assert task_type_data.description is None
+        assert task_type_data.item_type_id == 1
 
     def test_create_task_type_name_whitespace_stripped(self):
         """Test name whitespace is stripped."""
         task_type_data = TaskTypeCreateRequest(
             name="  Tire Rotation  ",
+            item_type_id=1,
         )
         assert task_type_data.name == "Tire Rotation"
 
@@ -40,6 +45,7 @@ class TestTaskTypeCreateRequest:
         with pytest.raises(ValidationError) as exc_info:
             TaskTypeCreateRequest(
                 name="",
+                item_type_id=1,
             )
         assert "empty" in str(exc_info.value).lower()
 
@@ -48,6 +54,7 @@ class TestTaskTypeCreateRequest:
         with pytest.raises(ValidationError) as exc_info:
             TaskTypeCreateRequest(
                 name="   ",
+                item_type_id=1,
             )
         assert "empty" in str(exc_info.value).lower()
 
@@ -56,6 +63,7 @@ class TestTaskTypeCreateRequest:
         with pytest.raises(ValidationError) as exc_info:
             TaskTypeCreateRequest(
                 name="a" * 256,
+                item_type_id=1,
             )
         assert "255" in str(exc_info.value)
 
@@ -63,6 +71,7 @@ class TestTaskTypeCreateRequest:
         """Test name with exactly 255 characters is accepted."""
         task_type_data = TaskTypeCreateRequest(
             name="a" * 255,
+            item_type_id=1,
         )
         assert len(task_type_data.name) == 255
 
@@ -71,6 +80,7 @@ class TestTaskTypeCreateRequest:
         task_type_data = TaskTypeCreateRequest(
             name="Inspection",
             description="  Visual inspection of components  ",
+            item_type_id=1,
         )
         assert task_type_data.description == "Visual inspection of components"
 
@@ -79,6 +89,7 @@ class TestTaskTypeCreateRequest:
         task_type_data = TaskTypeCreateRequest(
             name="Replacement",
             description="   ",
+            item_type_id=1,
         )
         assert task_type_data.description is None
 
@@ -87,6 +98,7 @@ class TestTaskTypeCreateRequest:
         task_type_data = TaskTypeCreateRequest(
             name="Service",
             description="",
+            item_type_id=1,
         )
         assert task_type_data.description is None
 
@@ -95,6 +107,7 @@ class TestTaskTypeCreateRequest:
         with pytest.raises(ValidationError):
             TaskTypeCreateRequest(
                 description="Some description",
+                item_type_id=1,
             )
 
     def test_create_task_type_non_string_name_rejected(self):
@@ -102,6 +115,7 @@ class TestTaskTypeCreateRequest:
         with pytest.raises(ValidationError) as exc_info:
             TaskTypeCreateRequest(
                 name=123,
+                item_type_id=1,
             )
         assert "string" in str(exc_info.value).lower()
 
@@ -111,8 +125,44 @@ class TestTaskTypeCreateRequest:
             TaskTypeCreateRequest(
                 name="Valid Name",
                 description=456,
+                item_type_id=1,
             )
         assert "string" in str(exc_info.value).lower()
+
+    def test_create_task_type_missing_item_type_id(self):
+        """Test missing item_type_id returns validation error."""
+        with pytest.raises(ValidationError):
+            TaskTypeCreateRequest(
+                name="Valid Name",
+                description="Some description",
+            )
+
+    def test_create_task_type_negative_item_type_id_rejected(self):
+        """Test negative item_type_id is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            TaskTypeCreateRequest(
+                name="Valid Name",
+                item_type_id=-1,
+            )
+        assert "positive" in str(exc_info.value).lower()
+
+    def test_create_task_type_zero_item_type_id_rejected(self):
+        """Test zero item_type_id is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            TaskTypeCreateRequest(
+                name="Valid Name",
+                item_type_id=0,
+            )
+        assert "positive" in str(exc_info.value).lower()
+
+    def test_create_task_type_non_integer_item_type_id_rejected(self):
+        """Test non-integer item_type_id is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            TaskTypeCreateRequest(
+                name="Valid Name",
+                item_type_id="not_an_int",
+            )
+        assert "integer" in str(exc_info.value).lower()
 
 
 class TestTaskTypeResponse:
@@ -124,6 +174,7 @@ class TestTaskTypeResponse:
             id=1,
             name="Oil Change",
             description="Service task",
+            item_type_id=1,
             created_at=datetime(2024, 1, 15, 10, 0, 0),
             updated_at=datetime(2024, 1, 15, 10, 0, 0),
         )
@@ -139,6 +190,7 @@ class TestTaskTypeResponse:
             id=5,
             name="Tire Rotation",
             description="Rotate tires for even wear",
+            item_type_id=1,
             created_at=created,
             updated_at=updated,
         )
@@ -147,5 +199,6 @@ class TestTaskTypeResponse:
         assert data["id"] == 5
         assert data["name"] == "Tire Rotation"
         assert data["description"] == "Rotate tires for even wear"
+        assert data["item_type_id"] == 1
         assert data["created_at"] == created
         assert data["updated_at"] == updated

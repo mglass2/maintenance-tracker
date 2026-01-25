@@ -201,7 +201,7 @@ def create_maintenance_template(item_type_id=None):
     # Phase 3: Fetch and select task type
     try:
         with APIClient() as client:
-            response = client._make_request("GET", "/task_types")
+            response = client._make_request("GET", f"/task_types?item_type_id={selected_item_type_id}")
             if response.status_code != 200:
                 click.echo("Error: Unable to fetch task types from API", err=True)
                 return
@@ -210,7 +210,7 @@ def create_maintenance_template(item_type_id=None):
             task_types = types_data.get("task_types", [])
 
             if not task_types:
-                click.echo("Error: No task types available in the system", err=True)
+                click.echo(f"Error: No task types available for {selected_item_type_name} in the system", err=True)
                 return
     except (APIConnectionError, APITimeoutError):
         click.echo("\n✗ Error: Unable to connect to API", err=True)
