@@ -23,7 +23,7 @@ cat << EOF > $filename
 
 ## Goal: [...]
 
-Context:
+## Context:
 [DESCRIPTION]
 
 ## Prerequisites:
