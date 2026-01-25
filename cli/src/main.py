@@ -9,6 +9,7 @@ from src.commands.item_type import create_item_type
 from src.commands.maintenance_template import create_maintenance_template
 from src.commands.task import create_task
 from src.commands.auth import select_user, whoami, switch_user, logout
+from src.commands.show_task_types import show_task_types
 from src.utils.interactive import run_interactive_mode
 
 
@@ -34,6 +35,7 @@ cli.add_command(select_user)
 cli.add_command(whoami)
 cli.add_command(switch_user)
 cli.add_command(logout)
+cli.add_command(show_task_types)
 
 
 if __name__ == "__main__":

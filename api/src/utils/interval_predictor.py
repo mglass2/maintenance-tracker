@@ -5,12 +5,20 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
 
-from ..models.item import Item
-from ..services.exceptions import (
-    InvalidForecastDataError,
-    MissingForecastKeyError,
-    ResourceNotFoundError,
-)
+try:
+    from ..models.item import Item
+    from ..services.exceptions import (
+        InvalidForecastDataError,
+        MissingForecastKeyError,
+        ResourceNotFoundError,
+    )
+except ImportError:
+    from models.item import Item
+    from services.exceptions import (
+        InvalidForecastDataError,
+        MissingForecastKeyError,
+        ResourceNotFoundError,
+    )
 
 
 class IntervalPredictor:

@@ -6,7 +6,10 @@ from models.maintenance_template import MaintenanceTemplate
 from models.item_type import ItemType
 from models.task_type import TaskType
 from schemas.maintenance_templates import MaintenanceTemplateCreateRequest
-from services.maintenance_template_service import create_maintenance_template
+from services.maintenance_template_service import (
+    create_maintenance_template,
+    get_all_templates_grouped_by_item_type,
+)
 from services.exceptions import ResourceNotFoundError, DuplicateNameError
 
 
@@ -229,3 +232,261 @@ class TestCreateMaintenanceTemplate:
         assert template1.id != template2.id
         assert template1.item_type_id == template2.item_type_id
         assert template1.task_type_id != template2.task_type_id
+
+
+class TestGetAllTemplatesGroupedByItemType:
+    """Tests for get_all_templates_grouped_by_item_type service function."""
+
+    def test_empty_database(self, db: Session):
+        """Test retrieving from empty database returns empty item_types list."""
+        result = get_all_templates_grouped_by_item_type(db)
+
+        assert result == {"item_types": []}
+
+    def test_single_item_type_single_template(self, db: Session):
+        """Test retrieving single item type with single template."""
+        # Create item type
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        # Create task type
+        task_type = TaskType(name="Oil Change")
+        db.add(task_type)
+        db.commit()
+        db.refresh(task_type)
+
+        # Create template
+        template = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type.id,
+            time_interval_days=30,
+        )
+        db.add(template)
+        db.commit()
+
+        result = get_all_templates_grouped_by_item_type(db)
+
+        assert len(result["item_types"]) == 1
+        assert result["item_types"][0]["item_type_name"] == "Car"
+        assert result["item_types"][0]["item_type_id"] == item_type.id
+        assert len(result["item_types"][0]["templates"]) == 1
+        assert result["item_types"][0]["templates"][0]["task_type_name"] == "Oil Change"
+        assert result["item_types"][0]["templates"][0]["time_interval_days"] == 30
+
+    def test_multiple_item_types(self, db: Session):
+        """Test retrieving multiple item types with templates."""
+        # Create item types
+        item_type1 = ItemType(name="Car")
+        item_type2 = ItemType(name="House")
+        db.add_all([item_type1, item_type2])
+        db.commit()
+        db.refresh(item_type1)
+        db.refresh(item_type2)
+
+        # Create task types
+        task_type1 = TaskType(name="Oil Change")
+        task_type2 = TaskType(name="Roof Inspection")
+        db.add_all([task_type1, task_type2])
+        db.commit()
+        db.refresh(task_type1)
+        db.refresh(task_type2)
+
+        # Create templates
+        template1 = MaintenanceTemplate(
+            item_type_id=item_type1.id,
+            task_type_id=task_type1.id,
+            time_interval_days=30,
+        )
+        template2 = MaintenanceTemplate(
+            item_type_id=item_type2.id,
+            task_type_id=task_type2.id,
+            time_interval_days=365,
+        )
+        db.add_all([template1, template2])
+        db.commit()
+
+        result = get_all_templates_grouped_by_item_type(db)
+
+        assert len(result["item_types"]) == 2
+        # Should be sorted by item_type_name
+        names = [it["item_type_name"] for it in result["item_types"]]
+        assert names == ["Car", "House"]
+
+    def test_single_item_type_multiple_templates(self, db: Session):
+        """Test retrieving single item type with multiple templates."""
+        # Create item type
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        # Create task types
+        task_type1 = TaskType(name="Oil Change")
+        task_type2 = TaskType(name="Tire Rotation")
+        task_type3 = TaskType(name="Brake Inspection")
+        db.add_all([task_type1, task_type2, task_type3])
+        db.commit()
+        db.refresh(task_type1)
+        db.refresh(task_type2)
+        db.refresh(task_type3)
+
+        # Create templates
+        template1 = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type1.id,
+            time_interval_days=30,
+        )
+        template2 = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type2.id,
+            time_interval_days=90,
+        )
+        template3 = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type3.id,
+            time_interval_days=180,
+        )
+        db.add_all([template1, template2, template3])
+        db.commit()
+
+        result = get_all_templates_grouped_by_item_type(db)
+
+        assert len(result["item_types"]) == 1
+        assert len(result["item_types"][0]["templates"]) == 3
+        # Templates should be sorted by task_type_name
+        task_names = [t["task_type_name"] for t in result["item_types"][0]["templates"]]
+        assert task_names == ["Brake Inspection", "Oil Change", "Tire Rotation"]
+
+    def test_filters_soft_deleted_templates(self, db: Session):
+        """Test that soft-deleted templates are not included."""
+        # Create item type
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        # Create task types
+        task_type1 = TaskType(name="Oil Change")
+        task_type2 = TaskType(name="Tire Rotation")
+        db.add_all([task_type1, task_type2])
+        db.commit()
+        db.refresh(task_type1)
+        db.refresh(task_type2)
+
+        # Create templates, one of which is deleted
+        template1 = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type1.id,
+            time_interval_days=30,
+        )
+        template2 = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type2.id,
+            time_interval_days=90,
+            is_deleted=True,
+        )
+        db.add_all([template1, template2])
+        db.commit()
+
+        result = get_all_templates_grouped_by_item_type(db)
+
+        assert len(result["item_types"]) == 1
+        assert len(result["item_types"][0]["templates"]) == 1
+        assert result["item_types"][0]["templates"][0]["task_type_name"] == "Oil Change"
+
+    def test_filters_soft_deleted_item_types(self, db: Session):
+        """Test that item types with only deleted templates are not included."""
+        # Create item types
+        item_type1 = ItemType(name="Car")
+        item_type2 = ItemType(name="House", is_deleted=True)
+        db.add_all([item_type1, item_type2])
+        db.commit()
+        db.refresh(item_type1)
+        db.refresh(item_type2)
+
+        # Create task types
+        task_type1 = TaskType(name="Oil Change")
+        task_type2 = TaskType(name="Roof Inspection")
+        db.add_all([task_type1, task_type2])
+        db.commit()
+        db.refresh(task_type1)
+        db.refresh(task_type2)
+
+        # Create templates
+        template1 = MaintenanceTemplate(
+            item_type_id=item_type1.id,
+            task_type_id=task_type1.id,
+            time_interval_days=30,
+        )
+        template2 = MaintenanceTemplate(
+            item_type_id=item_type2.id,
+            task_type_id=task_type2.id,
+            time_interval_days=365,
+        )
+        db.add_all([template1, template2])
+        db.commit()
+
+        result = get_all_templates_grouped_by_item_type(db)
+
+        # Should only return Car, not deleted House
+        assert len(result["item_types"]) == 1
+        assert result["item_types"][0]["item_type_name"] == "Car"
+
+    def test_custom_interval_included(self, db: Session):
+        """Test that custom_interval is properly included in response."""
+        # Create item type
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        # Create task type
+        task_type = TaskType(name="Tire Rotation")
+        db.add(task_type)
+        db.commit()
+        db.refresh(task_type)
+
+        # Create template with custom_interval
+        custom_interval = {"type": "mileage", "value": 5000}
+        template = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type.id,
+            time_interval_days=90,
+            custom_interval=custom_interval,
+        )
+        db.add(template)
+        db.commit()
+
+        result = get_all_templates_grouped_by_item_type(db)
+
+        assert result["item_types"][0]["templates"][0]["custom_interval"] == custom_interval
+
+    def test_null_custom_interval(self, db: Session):
+        """Test that null custom_interval is properly handled."""
+        # Create item type
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        # Create task type
+        task_type = TaskType(name="Oil Change")
+        db.add(task_type)
+        db.commit()
+        db.refresh(task_type)
+
+        # Create template without custom_interval
+        template = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type.id,
+            time_interval_days=30,
+            custom_interval=None,
+        )
+        db.add(template)
+        db.commit()
+
+        result = get_all_templates_grouped_by_item_type(db)
+
+        assert result["item_types"][0]["templates"][0]["custom_interval"] is None

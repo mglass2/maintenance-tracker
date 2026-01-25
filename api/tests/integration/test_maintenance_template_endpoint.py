@@ -262,3 +262,188 @@ class TestGetMaintenanceTemplatesByItemTypeEndpoint:
         if response.status_code == 200:
             data = response.json()
             assert isinstance(data["data"], list)
+
+
+class TestGetAllTemplatesEndpoint:
+    """Tests for GET /maintenance_templates endpoint."""
+
+    def test_get_all_templates_empty_database(self, client: TestClient):
+        """Test GET all templates with empty database."""
+        response = client.get("/maintenance_templates")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "item_types" in data["data"]
+        assert data["data"]["item_types"] == []
+
+    def test_get_all_templates_response_structure(self, client: TestClient, db):
+        """Test response structure of GET all templates."""
+        from models.item_type import ItemType
+        from models.task_type import TaskType
+        from models.maintenance_template import MaintenanceTemplate
+
+        # Create test data
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        task_type = TaskType(name="Oil Change")
+        db.add(task_type)
+        db.commit()
+        db.refresh(task_type)
+
+        template = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type.id,
+            time_interval_days=30,
+        )
+        db.add(template)
+        db.commit()
+
+        response = client.get("/maintenance_templates")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "data" in data
+        assert "message" in data
+        assert "item_types" in data["data"]
+        assert len(data["data"]["item_types"]) == 1
+
+        # Verify item type structure
+        item_type_data = data["data"]["item_types"][0]
+        assert "item_type_id" in item_type_data
+        assert "item_type_name" in item_type_data
+        assert "templates" in item_type_data
+        assert isinstance(item_type_data["templates"], list)
+
+        # Verify template structure
+        assert len(item_type_data["templates"]) == 1
+        template_data = item_type_data["templates"][0]
+        assert "task_type_id" in template_data
+        assert "task_type_name" in template_data
+        assert "time_interval_days" in template_data
+        assert "custom_interval" in template_data
+
+    def test_get_all_templates_multiple_item_types(self, client: TestClient, db):
+        """Test getting all templates with multiple item types."""
+        from models.item_type import ItemType
+        from models.task_type import TaskType
+        from models.maintenance_template import MaintenanceTemplate
+
+        # Create item types
+        item_type1 = ItemType(name="Car")
+        item_type2 = ItemType(name="House")
+        db.add_all([item_type1, item_type2])
+        db.commit()
+        db.refresh(item_type1)
+        db.refresh(item_type2)
+
+        # Create task types
+        task_type1 = TaskType(name="Oil Change")
+        task_type2 = TaskType(name="Roof Inspection")
+        db.add_all([task_type1, task_type2])
+        db.commit()
+        db.refresh(task_type1)
+        db.refresh(task_type2)
+
+        # Create templates
+        template1 = MaintenanceTemplate(
+            item_type_id=item_type1.id,
+            task_type_id=task_type1.id,
+            time_interval_days=30,
+        )
+        template2 = MaintenanceTemplate(
+            item_type_id=item_type2.id,
+            task_type_id=task_type2.id,
+            time_interval_days=365,
+        )
+        db.add_all([template1, template2])
+        db.commit()
+
+        response = client.get("/maintenance_templates")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]["item_types"]) == 2
+
+        # Verify item types are sorted by name
+        names = [it["item_type_name"] for it in data["data"]["item_types"]]
+        assert names == ["Car", "House"]
+
+    def test_get_all_templates_with_custom_interval(self, client: TestClient, db):
+        """Test that custom_interval is included in response."""
+        from models.item_type import ItemType
+        from models.task_type import TaskType
+        from models.maintenance_template import MaintenanceTemplate
+
+        # Create test data
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        task_type = TaskType(name="Tire Rotation")
+        db.add(task_type)
+        db.commit()
+        db.refresh(task_type)
+
+        custom_interval = {"type": "mileage", "value": 5000}
+        template = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type.id,
+            time_interval_days=90,
+            custom_interval=custom_interval,
+        )
+        db.add(template)
+        db.commit()
+
+        response = client.get("/maintenance_templates")
+
+        assert response.status_code == 200
+        data = response.json()
+        template_data = data["data"]["item_types"][0]["templates"][0]
+        assert template_data["custom_interval"] == custom_interval
+
+    def test_get_all_templates_filters_soft_deleted(self, client: TestClient, db):
+        """Test that soft-deleted templates are filtered out."""
+        from models.item_type import ItemType
+        from models.task_type import TaskType
+        from models.maintenance_template import MaintenanceTemplate
+
+        # Create test data
+        item_type = ItemType(name="Car")
+        db.add(item_type)
+        db.commit()
+        db.refresh(item_type)
+
+        task_type1 = TaskType(name="Oil Change")
+        task_type2 = TaskType(name="Tire Rotation")
+        db.add_all([task_type1, task_type2])
+        db.commit()
+        db.refresh(task_type1)
+        db.refresh(task_type2)
+
+        # Create one active and one deleted template
+        template1 = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type1.id,
+            time_interval_days=30,
+        )
+        template2 = MaintenanceTemplate(
+            item_type_id=item_type.id,
+            task_type_id=task_type2.id,
+            time_interval_days=90,
+            is_deleted=True,
+        )
+        db.add_all([template1, template2])
+        db.commit()
+
+        response = client.get("/maintenance_templates")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]["item_types"]) == 1
+        assert len(data["data"]["item_types"][0]["templates"]) == 1
+        assert data["data"]["item_types"][0]["templates"][0]["task_type_name"] == "Oil Change"

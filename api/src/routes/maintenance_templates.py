@@ -11,7 +11,11 @@ try:
         MaintenanceTemplateResponse,
         MaintenanceTemplateWithTaskTypeResponse,
     )
-    from ..services.maintenance_template_service import create_maintenance_template, get_templates_by_item_type
+    from ..services.maintenance_template_service import (
+        create_maintenance_template,
+        get_templates_by_item_type,
+        get_all_templates_grouped_by_item_type,
+    )
     from ..services.exceptions import ResourceNotFoundError, DuplicateNameError
     from ..utils.responses import success_response, error_response
 except ImportError:
@@ -21,7 +25,11 @@ except ImportError:
         MaintenanceTemplateResponse,
         MaintenanceTemplateWithTaskTypeResponse,
     )
-    from services.maintenance_template_service import create_maintenance_template, get_templates_by_item_type
+    from services.maintenance_template_service import (
+        create_maintenance_template,
+        get_templates_by_item_type,
+        get_all_templates_grouped_by_item_type,
+    )
     from services.exceptions import ResourceNotFoundError, DuplicateNameError
     from utils.responses import success_response, error_response
 
@@ -157,6 +165,60 @@ def get_templates_by_item_type_endpoint(
             error="RESOURCE_NOT_FOUND",
             message=str(e),
             status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    except Exception as e:
+        import traceback
+
+        print(f"DEBUG: Unexpected error: {type(e).__name__}: {str(e)}")
+        traceback.print_exc()
+        return error_response(
+            error="INTERNAL_ERROR",
+            message=f"An unexpected error occurred: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@router.get("", status_code=status.HTTP_200_OK)
+def get_all_templates_endpoint(
+    db: Session = Depends(get_db),
+):
+    """
+    Get all maintenance templates grouped by item type.
+
+    Returns:
+        200 OK with all maintenance templates grouped and organized by item type.
+        Only item types with templates are included.
+
+    Response format:
+        {
+            "data": {
+                "item_types": [
+                    {
+                        "item_type_id": int,
+                        "item_type_name": str,
+                        "templates": [
+                            {
+                                "task_type_id": int,
+                                "task_type_name": str,
+                                "time_interval_days": int,
+                                "custom_interval": dict or null
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+    Error responses:
+        - 500 Internal Server Error: Unexpected server error
+    """
+    try:
+        result = get_all_templates_grouped_by_item_type(db)
+
+        return success_response(
+            data=result,
+            message="Retrieved all maintenance templates",
+            status_code=status.HTTP_200_OK,
         )
 
     except Exception as e:

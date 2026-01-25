@@ -136,3 +136,95 @@ def get_templates_by_item_type(db: Session, item_type_id: int) -> List[Maintenan
     ).order_by(MaintenanceTemplate.created_at.desc()).all()
 
     return templates
+
+
+def get_all_templates_grouped_by_item_type(db: Session) -> dict:
+    """
+    Retrieve all maintenance templates grouped by item type.
+
+    Groups all non-deleted templates by item type and includes task type names.
+    Only returns item types that have at least one template and are not deleted.
+
+    Args:
+        db: Database session
+
+    Returns:
+        Dictionary with structure:
+        {
+            "item_types": [
+                {
+                    "item_type_id": int,
+                    "item_type_name": str,
+                    "templates": [
+                        {
+                            "task_type_id": int,
+                            "task_type_name": str,
+                            "time_interval_days": int,
+                            "custom_interval": dict or None,
+                        }
+                    ]
+                }
+            ]
+        }
+
+    """
+    # Get all non-deleted templates with their associated item types and task types
+    templates = db.query(MaintenanceTemplate).filter(
+        MaintenanceTemplate.is_deleted == False,
+    ).all()
+
+    if not templates:
+        return {"item_types": []}
+
+    # Get all non-deleted item types and task types
+    item_types = {
+        it.id: it.name
+        for it in db.query(ItemType).filter(ItemType.is_deleted == False).all()
+    }
+
+    task_types = {
+        tt.id: tt.name
+        for tt in db.query(TaskType).filter(TaskType.is_deleted == False).all()
+    }
+
+    # Group templates by item type, only including those where item_type and task_type are not deleted
+    grouped = {}
+    for template in templates:
+        # Skip templates where the item type is deleted
+        if template.item_type_id not in item_types:
+            continue
+
+        # Skip templates where the task type is deleted
+        if template.task_type_id not in task_types:
+            continue
+
+        if template.item_type_id not in grouped:
+            grouped[template.item_type_id] = {
+                "item_type_id": template.item_type_id,
+                "item_type_name": item_types[template.item_type_id],
+                "templates": [],
+            }
+
+        grouped[template.item_type_id]["templates"].append(
+            {
+                "task_type_id": template.task_type_id,
+                "task_type_name": task_types[template.task_type_id],
+                "time_interval_days": template.time_interval_days,
+                "custom_interval": template.custom_interval,
+            }
+        )
+
+    # Sort by item type name, then sort templates within each group by task type name
+    for group in grouped.values():
+        group["templates"].sort(
+            key=lambda t: t["task_type_name"]
+        )
+
+    result = {
+        "item_types": sorted(
+            grouped.values(),
+            key=lambda x: x["item_type_name"]
+        )
+    }
+
+    return result
