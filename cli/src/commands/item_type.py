@@ -163,7 +163,7 @@ def create_item_type():
             # Launch create-maintenance-template command
             click.echo("\nLaunching maintenance template setup...\n")
             ctx = click.Context(create_maintenance_template)
-            ctx.invoke(create_maintenance_template)
+            ctx.invoke(create_maintenance_template, item_type_id=item_type_data.get('id'))
             break
         elif launch_template_cmd in ("no", "n"):
             click.echo("\nItem type created successfully. You can create maintenance templates later.")

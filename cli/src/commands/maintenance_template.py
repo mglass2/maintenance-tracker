@@ -35,16 +35,19 @@ def _convert_value_type(value: str) -> Any:
 
 
 @click.command(name="create-maintenance-template")
-def create_maintenance_template():
+def create_maintenance_template(item_type_id=None):
     """Create a new maintenance template for an item type and task type combination.
 
     This command will:
-    1. Let you select an item type
+    1. Let you select an item type (or use the provided one)
     2. Show existing templates for that item type
     3. Let you select a task type
     4. Collect the maintenance interval in days
     5. Optionally collect custom interval fields
     6. Create the maintenance template record
+
+    Args:
+        item_type_id: Optional item type ID. If provided, skips the item type selection.
     """
     # Phase 1: Fetch and select item type
     try:
@@ -72,45 +75,101 @@ def create_maintenance_template():
         click.echo(f"\n✗ Error: An unexpected error occurred: {str(e)}", err=True)
         return
 
-    # Display item types and prompt for selection
-    click.echo("\nAvailable Item Types:")
-    for idx, item_type in enumerate(item_types, 1):
-        name = item_type.get("name", "Unknown")
-        description = item_type.get("description", "")
-        if description:
-            click.echo(f"  {idx}. {name} - {description}")
-        else:
-            click.echo(f"  {idx}. {name}")
-
-    # Validate item type selection
+    # Handle item type selection (auto-select if provided, otherwise prompt)
     selected_item_type_id = None
     selected_item_type_name = None
-    while True:
-        selection = click.prompt(
-            f"Select an item type (1-{len(item_types)})",
-            type=str,
-            default=""
-        ).strip()
-        if not selection:
-            click.echo("Error: Please select an item type", err=True)
-            continue
 
-        try:
-            selection_num = int(selection)
-            if 1 <= selection_num <= len(item_types):
-                selected_item_type_id = item_types[selection_num - 1].get("id")
-                selected_item_type_name = item_types[selection_num - 1].get("name")
+    if item_type_id:
+        # Auto-select the provided item type
+        matching_type = None
+        for item_type in item_types:
+            if item_type.get("id") == item_type_id:
+                matching_type = item_type
                 break
-            else:
-                click.echo(
-                    f"Error: Please enter a number between 1 and {len(item_types)}",
-                    err=True
-                )
-        except ValueError:
+
+        if matching_type:
+            selected_item_type_id = matching_type.get("id")
+            selected_item_type_name = matching_type.get("name")
+            click.echo(f"\nUsing item type: {selected_item_type_name}")
+        else:
+            # Fallback to manual selection if item type not found
             click.echo(
-                f"Error: Please enter a valid number between 1 and {len(item_types)}",
+                f"\nWarning: Item type {item_type_id} not found. Please select from available types.",
                 err=True
             )
+            click.echo("\nAvailable Item Types:")
+            for idx, item_type in enumerate(item_types, 1):
+                name = item_type.get("name", "Unknown")
+                description = item_type.get("description", "")
+                if description:
+                    click.echo(f"  {idx}. {name} - {description}")
+                else:
+                    click.echo(f"  {idx}. {name}")
+
+            while True:
+                selection = click.prompt(
+                    f"Select an item type (1-{len(item_types)})",
+                    type=str,
+                    default=""
+                ).strip()
+                if not selection:
+                    click.echo("Error: Please select an item type", err=True)
+                    continue
+
+                try:
+                    selection_num = int(selection)
+                    if 1 <= selection_num <= len(item_types):
+                        selected_item_type_id = item_types[selection_num - 1].get("id")
+                        selected_item_type_name = item_types[selection_num - 1].get("name")
+                        break
+                    else:
+                        click.echo(
+                            f"Error: Please enter a number between 1 and {len(item_types)}",
+                            err=True
+                        )
+                except ValueError:
+                    click.echo(
+                        f"Error: Please enter a valid number between 1 and {len(item_types)}",
+                        err=True
+                    )
+    else:
+        # Display item types and prompt for selection
+        click.echo("\nAvailable Item Types:")
+        for idx, item_type in enumerate(item_types, 1):
+            name = item_type.get("name", "Unknown")
+            description = item_type.get("description", "")
+            if description:
+                click.echo(f"  {idx}. {name} - {description}")
+            else:
+                click.echo(f"  {idx}. {name}")
+
+        # Validate item type selection
+        while True:
+            selection = click.prompt(
+                f"Select an item type (1-{len(item_types)})",
+                type=str,
+                default=""
+            ).strip()
+            if not selection:
+                click.echo("Error: Please select an item type", err=True)
+                continue
+
+            try:
+                selection_num = int(selection)
+                if 1 <= selection_num <= len(item_types):
+                    selected_item_type_id = item_types[selection_num - 1].get("id")
+                    selected_item_type_name = item_types[selection_num - 1].get("name")
+                    break
+                else:
+                    click.echo(
+                        f"Error: Please enter a number between 1 and {len(item_types)}",
+                        err=True
+                    )
+            except ValueError:
+                click.echo(
+                    f"Error: Please enter a valid number between 1 and {len(item_types)}",
+                    err=True
+                )
 
     # Phase 2: Fetch and display existing templates for this item type
     try:
