@@ -5,6 +5,7 @@ import sys
 
 from src import session
 from src.commands.auth import select_user
+from src.utils.shutdown import handle_shutdown
 
 
 def run_interactive_mode(cli_group):
@@ -52,6 +53,7 @@ def run_interactive_mode(cli_group):
             if not user_input:
                 continue
             if user_input.lower() in ("exit", "quit"):
+                handle_shutdown()
                 click.echo("Goodbye!")
                 break
 
@@ -93,5 +95,6 @@ def run_interactive_mode(cli_group):
             except Exception as e:
                 click.echo(f"Error: {e}", err=True)
         except (KeyboardInterrupt, EOFError):
+            handle_shutdown()
             click.echo("\nGoodbye!")
             break
