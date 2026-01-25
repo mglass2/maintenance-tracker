@@ -41,11 +41,12 @@ def _create_backup():
     """
     try:
         client = APIClient()
-        response = client.post("/backups/create")
+        response = client._make_request("POST", "/backups/create")
 
         if response.status_code == 201:
             # Backup successful
-            data = response.json().get("data", {})
+            
+            data = response.data.get("data", {})
             backup_file = data.get("backup_file", "unknown")
             size_mb = data.get("size_bytes", 0) / (1024 * 1024)
             click.echo(f"✓ Database backed up: {backup_file} ({size_mb:.2f} MB)")
@@ -60,7 +61,7 @@ def _create_backup():
                 )
         else:
             # Backup failed
-            error_data = response.json()
+            error_data = response.data.get("data", {})
             error_msg = error_data.get("message", "Unknown error")
             raise Exception(f"Backup API returned {response.status_code}: {error_msg}")
 
