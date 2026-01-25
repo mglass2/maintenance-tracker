@@ -25,6 +25,13 @@ def select_user():
             )
             return
 
+        elif len(users) == 1:
+            # Auto-select the only user
+            single_user = users[0]
+            session.set_active_user(single_user['id'], single_user)
+            click.echo(f"\n✓ Auto-selected user: {single_user['name']} (only user in system)")
+            return
+
         # Display users in a numbered list
         click.echo("\nAvailable users:")
         for idx, user in enumerate(users, 1):

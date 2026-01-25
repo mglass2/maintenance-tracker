@@ -138,6 +138,36 @@ class TestSelectUser:
             assert "Error selecting user" in result.output
             assert not session.is_authenticated()
 
+    def test_select_user_single_user_auto_select(self, cli_runner):
+        """Test auto-selection when exactly one user exists."""
+        with patch("src.commands.auth.APIClient") as mock_api_client:
+            mock_response = MagicMock()
+            mock_response.data = {
+                "data": [
+                    {"id": 1, "name": "John Doe", "email": "john@example.com"}
+                ]
+            }
+
+            mock_client_instance = MagicMock()
+            mock_client_instance._make_request.return_value = mock_response
+            mock_client_instance.__enter__.return_value = mock_client_instance
+            mock_client_instance.__exit__.return_value = False
+
+            mock_api_client.return_value = mock_client_instance
+
+            # Invoke command with NO input (should not prompt)
+            result = cli_runner.invoke(select_user)
+
+            # Verify auto-selection occurred
+            assert result.exit_code == 0
+            assert "Auto-selected user: John Doe" in result.output
+            assert "(only user in system)" in result.output
+            assert "Select user number" not in result.output
+
+            # Verify session was set
+            assert session.get_active_user_id() == 1
+            assert session.get_active_user_data()["name"] == "John Doe"
+
 
 class TestWhoami:
     """Test whoami command."""

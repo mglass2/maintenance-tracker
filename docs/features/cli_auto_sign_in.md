@@ -6,3 +6,8 @@
 - When opening the application, get the list of current users.
 - if there is only one user, automatically select that user for the CLI context
 - otherwise, continue with the current behavior of asking the user to either create a user (if there are no users) or select a user (if there is more than one user)
+
+## Testing:
+- 1 user: the user is automatically selected
+- 0 users: the user is prompted to create a new user
+- >1 user: the user is prompted to select one of those users
