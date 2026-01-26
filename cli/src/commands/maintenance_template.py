@@ -174,35 +174,35 @@ def create_maintenance_template(item_type_id=None):
     # Initialize existing_templates for filtering (used later in Phase 3)
     existing_templates = []
 
-    # Phase 2: Fetch and display existing templates for this item type
-    try:
-        with APIClient() as client:
-            response = client._make_request(
-                "GET",
-                f"/maintenance_templates/item_types/{selected_item_type_id}"
-            )
-
-            if response.status_code == 200:
-                existing_templates = response.data.get("data", [])
-
-                if existing_templates:
-                    click.echo(f"\nCurrent maintenance templates for {selected_item_type_name}:")
-                    for template in existing_templates:
-                        task_name = template.get("task_type_name", "Unknown")
-                        interval = template.get("time_interval_days")
-                        click.echo(f"  • {task_name}: Every {interval} days")
-                else:
-                    click.echo(f"\nNo existing templates for {selected_item_type_name}")
-            else:
-                click.echo("\nWarning: Could not fetch existing templates", err=True)
-
-    except Exception as e:
-        click.echo(f"\nWarning: Could not fetch existing templates: {str(e)}", err=True)
-
-    click.echo("\n" + "="*60)
-
     # Loop for creating multiple templates for the same item type
     while True:
+        # Phase 2: Fetch and display existing templates for this item type (refreshed on each iteration)
+        try:
+            with APIClient() as client:
+                response = client._make_request(
+                    "GET",
+                    f"/maintenance_templates/item_types/{selected_item_type_id}"
+                )
+
+                if response.status_code == 200:
+                    existing_templates = response.data.get("data", [])
+
+                    if existing_templates:
+                        click.echo(f"\nCurrent maintenance templates for {selected_item_type_name}:")
+                        for template in existing_templates:
+                            task_name = template.get("task_type_name", "Unknown")
+                            interval = template.get("time_interval_days")
+                            click.echo(f"  • {task_name}: Every {interval} days")
+                    else:
+                        click.echo(f"\nNo existing templates for {selected_item_type_name}")
+                else:
+                    click.echo("\nWarning: Could not fetch existing templates", err=True)
+
+        except Exception as e:
+            click.echo(f"\nWarning: Could not fetch existing templates: {str(e)}", err=True)
+
+        click.echo("\n" + "="*60)
+
         # Phase 3: Fetch and select task type
         try:
             with APIClient() as client:
@@ -226,8 +226,8 @@ def create_maintenance_template(item_type_id=None):
                 task_types = available_task_types
 
                 if not task_types:
-                    click.echo(f"Error: No eligible task types available for {selected_item_type_name}.", err=True)
-                    click.echo("All task types for this item type already have maintenance templates.", err=True)
+                    click.echo(f"No eligible task types available for {selected_item_type_name}.", err=True)
+                    click.echo("All task types for this item type already have maintenance templates.\n", err=True)
                     return
         except (APIConnectionError, APITimeoutError):
             click.echo("\n✗ Error: Unable to connect to API", err=True)
