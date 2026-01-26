@@ -25,8 +25,8 @@ UPDATE task_types SET item_type_id = 1 WHERE name = 'Spark Plug Replacement';
 UPDATE task_types SET item_type_id = 2 WHERE name = 'Roof Inspection';
 UPDATE task_types SET item_type_id = 2 WHERE name = 'Gutter Cleaning';
 
--- Step 3: Soft-delete task types without an item type mapping
-UPDATE task_types SET is_deleted = TRUE WHERE item_type_id IS NULL;
+-- Snowblower tasks (item_type_id = 3)
+UPDATE task_types SET item_type_id = 3 WHERE name = 'Blade Sharpening';
 
 -- Step 4: Add NOT NULL constraint
 ALTER TABLE task_types ALTER COLUMN item_type_id SET NOT NULL;
