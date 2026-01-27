@@ -10,15 +10,27 @@ from fastapi.testclient import TestClient
 # Add src directory to Python path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
-# Use PostgreSQL for testing (to support JSONB and other PG-specific types)
-# Database URL from environment or default for local development
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@db:5432/maintenance_tracker_test"
-)
+# Use TEST_DATABASE_URL for all tests
+# This MUST be a separate database from the application database to prevent data loss
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+
+if not TEST_DATABASE_URL:
+    raise ValueError(
+        "TEST_DATABASE_URL environment variable is not set. "
+        "Tests require a separate test database to prevent data loss. "
+        "Set TEST_DATABASE_URL=postgresql://postgres:postgres@db:5432/maintenance_tracker_test"
+    )
+
+# Safety check: Ensure we're connecting to test database
+if "maintenance_tracker_test" not in TEST_DATABASE_URL:
+    raise ValueError(
+        f"TEST_DATABASE_URL must point to maintenance_tracker_test database. "
+        f"Got: {TEST_DATABASE_URL}. This safety check prevents accidental "
+        f"connection to the application database."
+    )
 
 test_engine = create_engine(
-    DATABASE_URL,
+    TEST_DATABASE_URL,
     echo=False,
 )
 
@@ -41,14 +53,18 @@ from models.item_maintenance_plan import ItemMaintenancePlan
 
 @pytest.fixture(scope="function")
 def db():
-    """Create a test database and session."""
+    """Create a test database session.
+
+    IMPORTANT: This fixture operates on the TEST database (maintenance_tracker_test),
+    not the application database. The DROP SCHEMA CASCADE is safe.
+    """
     Base.metadata.create_all(bind=test_engine)
     session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
-        # Drop all tables with CASCADE to handle foreign key constraints
+        # Clean up: Drop all tables (SAFE - only affects test database)
         with test_engine.begin() as connection:
             connection.exec_driver_sql("DROP SCHEMA public CASCADE")
             connection.exec_driver_sql("CREATE SCHEMA public")
