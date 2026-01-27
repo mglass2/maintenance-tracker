@@ -1,6 +1,6 @@
 # CLI: Show Task Types for all item types
 
-## Goal: Create a CLI command called show-task-types that shows a list of all item types, and the task types associated with each item type
+## Goal: Create a CLI command called show-default-maintenance that shows a list of all item types, and the task types associated with each item type
 
 ## Context:
 Allow users to see all the item types, and the task types associated with those item types.
