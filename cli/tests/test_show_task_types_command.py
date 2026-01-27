@@ -83,7 +83,7 @@ class TestShowTaskTypesCommand:
             assert result.exit_code == 0
             assert "Car:" in result.output
             assert "Oil Change - 30 days" in result.output
-            assert "Maintenance Task Types by Item Type:" in result.output
+            assert "Default Maintenance Tasks:" in result.output
 
     def test_show_task_types_multiple_item_types(self, cli_runner):
         """Test displaying multiple item types."""

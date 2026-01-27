@@ -34,9 +34,9 @@ def _convert_value_type(value: str) -> Any:
     return value
 
 
-@click.command(name="create-maintenance-template")
+@click.command(name="default-maintenance")
 def create_maintenance_template(item_type_id=None):
-    """Create a new maintenance template for an item type and task type combination.
+    """Create default maintenance schedules for a type of item.
 
     This command will:
     1. Let you select an item type (or use the provided one)

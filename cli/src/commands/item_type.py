@@ -51,9 +51,9 @@ def create_item_type():
             name = item_type.get("name", "Unknown")
             description = item_type.get("description", "")
             if description:
-                click.echo(f"  {idx}. {name} - {description}")
+                click.echo(f"  {name} - {description}")
             else:
-                click.echo(f"  {idx}. {name}")
+                click.echo(f"  {name}")
         click.echo()
     else:
         click.echo(f"\nNo item types exist.\n")

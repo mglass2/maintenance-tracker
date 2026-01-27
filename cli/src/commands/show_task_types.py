@@ -10,9 +10,9 @@ from src.api_client import (
 )
 
 
-@click.command(name="show-task-types")
+@click.command(name="show-default-maintenance")
 def show_task_types():
-    """Display all item types and their associated maintenance task types.
+    """Display all default maintenance for all types of items.
 
     This command shows the complete list of item types in the system,
     along with the maintenance tasks that should be performed on each type.
@@ -48,7 +48,7 @@ def show_task_types():
         click.echo("Create item types and maintenance templates to see them listed here.\n")
         return
 
-    click.echo("\nMaintenance Task Types by Item Type:\n")
+    click.echo("\nDefault Maintenance Tasks:\n")
     click.echo("=" * 60)
 
     for item_type in item_types:
